@@ -11,30 +11,16 @@ import 'package:mp3_in_ma_pocket/design/theme.dart';
 import 'package:mp3_in_ma_pocket/design/widgets/player_controls.dart';
 import 'package:mp3_in_ma_pocket/library/mp3_library.dart';
 
-void _phone(WidgetTester tester) {
-  tester.view.physicalSize = const Size(1170, 2532); // iPhone 14/15, 390×844 pt
-  tester.view.devicePixelRatio = 3.0;
-  addTearDown(tester.view.reset);
-}
+import 'test_helpers.dart';
 
 Widget _wrap(Brightness b, Widget child) => MaterialApp(
       theme: buildSoftTheme(b),
       home: child,
     );
 
-/// Runs [action] in the real zone so the file I/O it starts can finish,
-/// then rebuilds.
-Future<void> _withRealIo(WidgetTester tester, Future<void> Function() action) async {
-  await tester.runAsync(() async {
-    await action();
-    await Future<void>.delayed(const Duration(milliseconds: 100));
-  });
-  await tester.pump();
-}
-
 void main() {
   testWidgets('first run → import → library', (tester) async {
-    _phone(tester);
+    phone(tester);
     final root = (await tester.runAsync(() => Directory.systemTemp.createTemp('preview_test')))!;
     addTearDown(() => root.deleteSync(recursive: true));
     final picks = [
@@ -46,10 +32,10 @@ void main() {
       picker: () async => picks,
     );
 
-    await _withRealIo(tester, () => tester.pumpWidget(DesignPreviewApp(library: library)));
+    await withRealIo(tester, () => tester.pumpWidget(DesignPreviewApp(library: library)));
     expect(find.text('MP3 IN MA POCKET'), findsOneWidget);
 
-    await _withRealIo(tester, () => tester.tap(find.text('Import MP3s')));
+    await withRealIo(tester, () => tester.tap(find.text('Import MP3s')));
 
     expect(find.text('LIBRARY · 2'), findsOneWidget);
     // F4: A→Z, ".mp3" hidden, length unknown until playback reads it.
@@ -59,9 +45,41 @@ void main() {
     expect(find.text('--:--'), findsNWidgets(2));
   });
 
+  testWidgets('F5: a deleted track stays gone after the next import', (tester) async {
+    phone(tester);
+    final root = (await tester.runAsync(() => Directory.systemTemp.createTemp('delete_test')))!;
+    addTearDown(() => root.deleteSync(recursive: true));
+    final docs = Directory(p.join(root.path, 'Documents'))..createSync();
+    for (final name in ['Old A.mp3', 'Old B.mp3']) {
+      File(p.join(docs.path, name)).writeAsStringSync('ID3');
+    }
+    final newFile = File(p.join(root.path, 'New.mp3'))..writeAsStringSync('ID3');
+    final library = Mp3Library(directory: () async => docs, picker: () async => [newFile.path]);
+
+    await withRealIo(tester, () => tester.pumpWidget(DesignPreviewApp(library: library)));
+    expect(find.text('LIBRARY · 2'), findsOneWidget);
+
+    await tester.drag(find.text('Old A'), const Offset(-500, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete this file?'), findsOneWidget);
+    await tester.tap(find.text('Delete').last);
+    await settleIo(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.text('LIBRARY · 1'), findsOneWidget);
+    expect(File(p.join(docs.path, 'Old A.mp3')).existsSync(), isFalse);
+
+    await withRealIo(tester, () => tester.tap(find.bySemanticsLabel('Import MP3s')));
+
+    expect(find.text('LIBRARY · 2'), findsOneWidget);
+    expect(find.text('Old A'), findsNothing);
+    expect(find.text('Old B'), findsOneWidget);
+    expect(find.text('New'), findsOneWidget);
+  });
+
   for (final b in Brightness.values) {
     testWidgets('Now Playing renders without overflow ($b)', (tester) async {
-      _phone(tester);
+      phone(tester);
       await tester.pumpWidget(_wrap(
         b,
         NowPlayingScreen(
@@ -87,7 +105,7 @@ void main() {
     });
 
     testWidgets('About renders without overflow ($b)', (tester) async {
-      _phone(tester);
+      phone(tester);
       await tester.pumpWidget(_wrap(
         b,
         AboutScreen(

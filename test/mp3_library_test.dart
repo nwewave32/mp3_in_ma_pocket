@@ -90,12 +90,33 @@ void main() {
     expect(File(p.join(library.path, 'Song 2.MP3')).readAsStringSync(), 'b');
   });
 
-  test('list returns only MP3 files', () async {
+  test('F5: delete removes the file; a file already gone is fine', () async {
+    await library.create();
+    final f = File(p.join(library.path, 'a.mp3'))..writeAsStringSync('');
+
+    await lib(const []).delete(f.path);
+    expect(f.existsSync(), isFalse);
+    await lib(const []).delete(f.path);
+  });
+
+  test('delete refuses paths outside the library', () async {
+    final outside = await pickedFile('outside.mp3');
+
+    expect(() => lib(const []).delete(outside), throwsArgumentError);
+    expect(File(outside).existsSync(), isTrue);
+  });
+
+  test('list returns only MP3 files at the top level', () async {
     await library.create();
     File(p.join(library.path, 'a.mp3')).writeAsStringSync('');
     File(p.join(library.path, 'b.Mp3')).writeAsStringSync('');
     File(p.join(library.path, '.DS_Store')).writeAsStringSync('');
     Directory(p.join(library.path, 'folder.mp3')).createSync();
+    // Folders made in the Files app aren't read (folder import is out of scope).
+    Directory(p.join(library.path, 'Album')).createSync();
+    File(p.join(library.path, 'Album', 'c.mp3')).writeAsStringSync('');
+    // Left behind if the app was killed mid-copy.
+    File(p.join(library.path, 'd.mp3.part')).writeAsStringSync('');
 
     final names = (await lib(const []).list()).map((f) => p.basename(f.path)).toSet();
 

@@ -13,12 +13,16 @@ assets/
   licenses/          ← 폰트 라이선스 원문 (앱의 Open Source Licenses에 자동 등록)
 lib/
   main.dart          ← 지금은 디자인 프리뷰 앱을 실행
+  app/
+    library_controller.dart ← 곡 목록 상태: 가져오기(F1)·복귀 시 새로 읽기(F2)·삭제(F5)
+  library/
+    mp3_library.dart  ← 앱 폴더(Documents)의 mp3 읽기·복사(F3 번호 붙이기)·삭제
   design/
     tokens.dart      ← SoftColors(ThemeExtension, light/dark), SoftSpace, SoftRadius, SoftMotion, SoftShadows
     typography.dart  ← SoftFonts, SoftText
     theme.dart       ← buildSoftTheme(Brightness)
     licenses.dart    ← 폰트 라이선스 등록
-    design_preview.dart ← 가짜 재생 상태로 화면을 눌러볼 수 있는 프리뷰
+    design_preview.dart ← 실제 목록 + 가짜 재생 상태로 화면을 눌러볼 수 있는 프리뷰
     widgets/
       soft_surface.dart   ← InsetShadowPainter, SoftSurface, SoftWell, SoftPanel, LcdPanel, SoftLed
       soft_key.dart       ← SoftKeyFace, SoftKey, SoftSocketKey, SoftPillButton
@@ -32,6 +36,9 @@ lib/
       about_screen.dart          (08S)
 test/
   design_screens_test.dart  ← 라이트/다크 렌더링, 첫 실행 → 가져오기 흐름
+  library_refresh_test.dart ← F2 복귀 시 새로 읽기, 읽기 겹침
+  mp3_library_test.dart     ← 가져오기·번호 붙이기·삭제
+  test_helpers.dart         ← 테스트 공용 도우미
 ```
 
 ## 실행

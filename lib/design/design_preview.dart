@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:path/path.dart' as p;
 
+import '../app/library_controller.dart';
 import '../library/mp3_library.dart';
 import 'screens/about_screen.dart';
 import 'screens/empty_library_screen.dart';
@@ -14,9 +14,9 @@ import 'theme.dart';
 import 'widgets/player_controls.dart';
 
 /// Clickable preview of "Key screens — Soft Keys" with fake playback state.
-/// Importing is real (F1); replace [PreviewPlayer] with just_audio /
-/// shared_preferences when wiring playback. The screens only take values and
-/// callbacks.
+/// The library is real ([LibraryController]); replace [PreviewPlayer] with
+/// just_audio / shared_preferences when wiring playback. The screens only take
+/// values and callbacks.
 class DesignPreviewApp extends StatefulWidget {
   const DesignPreviewApp({super.key, this.library});
 
@@ -27,51 +27,29 @@ class DesignPreviewApp extends StatefulWidget {
   State<DesignPreviewApp> createState() => _DesignPreviewAppState();
 }
 
-class _DesignPreviewAppState extends State<DesignPreviewApp> {
+class _DesignPreviewAppState extends State<DesignPreviewApp> with WidgetsBindingObserver {
   final _player = PreviewPlayer();
-  late final _library = widget.library ?? Mp3Library();
-  bool _importing = false;
+  late final _library = LibraryController(widget.library ?? Mp3Library());
 
   @override
   void initState() {
     super.initState();
-    // An unreadable folder just means an empty library on launch.
-    unawaited(_reload().catchError((Object _) {}, test: (e) => e is FileSystemException));
+    // The player plays whatever is in the library; a removed current track stops.
+    _library.addListener(() => _player.setTracks(_library.tracks));
+    WidgetsBinding.instance.addObserver(this);
+    _library.refresh();
   }
 
-  Future<void> _reload() async {
-    final files = await _library.list();
-    _player.setTracks([
-      for (final f in files) SoftTrack(id: f.path, title: p.basenameWithoutExtension(f.path)),
-    ]..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase())));
-  }
-
-  Future<void> _import(BuildContext context) async {
-    if (_importing) return;
-    _importing = true;
-    final messenger = ScaffoldMessenger.of(context);
-    String? error;
-    try {
-      final result = await _library.importFromPicker();
-      if (result == null) return;
-      await _reload();
-      if (result.failed > 0) {
-        error = result.failed == 1
-            ? "Couldn't import 1 file."
-            : "Couldn't import ${result.failed} files.";
-      }
-    } on PlatformException {
-      error = "Couldn't open Files.";
-    } on FileSystemException {
-      error = "Couldn't save the files.";
-    } finally {
-      _importing = false;
-    }
-    if (error != null) messenger.showSnackBar(SnackBar(content: Text(error)));
+  /// F2: files copied in through the Files app show up when the app returns.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _library.refresh();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _library.dispose();
     _player.dispose();
     super.dispose();
   }
@@ -84,16 +62,34 @@ class _DesignPreviewAppState extends State<DesignPreviewApp> {
       theme: buildSoftTheme(Brightness.light),
       darkTheme: buildSoftTheme(Brightness.dark),
       themeMode: ThemeMode.system,
-      home: _Home(player: _player, onImport: _import),
+      home: _Home(player: _player, library: _library),
     );
   }
 }
 
 class _Home extends StatelessWidget {
-  const _Home({required this.player, required this.onImport});
+  const _Home({required this.player, required this.library});
 
   final PreviewPlayer player;
-  final void Function(BuildContext context) onImport;
+  final LibraryController library;
+
+  Future<void> _import(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    String? error;
+    try {
+      final result = await library.import();
+      if (result != null && result.failed > 0) {
+        error = result.failed == 1
+            ? "Couldn't import 1 file."
+            : "Couldn't import ${result.failed} files.";
+      }
+    } on PlatformException {
+      error = "Couldn't open Files.";
+    } on FileSystemException {
+      error = "Couldn't save the files.";
+    }
+    if (error != null) messenger.showSnackBar(SnackBar(content: Text(error)));
+  }
 
   void _openAbout(BuildContext context) {
     Navigator.of(context).push(MaterialPageRoute<void>(
@@ -141,6 +137,7 @@ class _Home extends StatelessWidget {
 
   Future<bool> _confirmDelete(BuildContext context, int index) async {
     final t = player.tracks[index];
+    final messenger = ScaffoldMessenger.of(context);
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog.adaptive(
@@ -158,7 +155,13 @@ class _Home extends StatelessWidget {
         ],
       ),
     );
-    if (ok == true) player.delete(index);
+    if (ok == true) {
+      try {
+        await library.delete(t);
+      } on FileSystemException {
+        messenger.showSnackBar(const SnackBar(content: Text("Couldn't delete the file.")));
+      }
+    }
     // The list rebuilds from the model, so the Dismissible itself never removes.
     return false;
   }
@@ -170,7 +173,7 @@ class _Home extends StatelessWidget {
       builder: (context, _) {
         if (player.tracks.isEmpty) {
           return EmptyLibraryScreen(
-            onImport: () => onImport(context),
+            onImport: () => _import(context),
             onAbout: () => _openAbout(context),
           );
         }
@@ -184,7 +187,7 @@ class _Home extends StatelessWidget {
               : player.position.inMilliseconds / player.lengthOf(cur).inMilliseconds,
           onTrackTap: player.playAt,
           onDelete: (i) => _confirmDelete(context, i),
-          onImport: () => onImport(context),
+          onImport: () => _import(context),
           onAbout: () => _openAbout(context),
           onOpenPlayer: () => _openPlayer(context),
           onPlayPause: player.togglePlay,
@@ -294,20 +297,6 @@ class PreviewPlayer extends ChangeNotifier {
 
   void setRepeat(SoftRepeat r) {
     repeat = r;
-    notifyListeners();
-  }
-
-  void delete(int i) {
-    final removingCurrent = i == currentIndex;
-    tracks = [...tracks]..removeAt(i);
-    if (removingCurrent) {
-      // F5: deleting the playing track stops playback.
-      currentIndex = null;
-      playing = false;
-      position = Duration.zero;
-    } else if (currentIndex != null && i < currentIndex!) {
-      currentIndex = currentIndex! - 1;
-    }
     notifyListeners();
   }
 

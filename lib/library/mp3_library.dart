@@ -39,6 +39,20 @@ class Mp3Library {
     ];
   }
 
+  /// F5: removes a library file. A file that is already gone (deleted in the
+  /// Files app) counts as removed.
+  Future<void> delete(String path) async {
+    final dir = await _directory();
+    if (!p.isWithin(dir.path, path)) {
+      throw ArgumentError.value(path, 'path', 'is not in the library');
+    }
+    try {
+      await File(path).delete();
+    } on PathNotFoundException {
+      // Already gone.
+    }
+  }
+
   /// F1: lets the user pick several MP3s and copies them into the library.
   /// Returns null when the user cancels the picker.
   Future<ImportResult?> importFromPicker() async {
