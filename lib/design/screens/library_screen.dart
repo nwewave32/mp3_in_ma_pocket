@@ -9,13 +9,15 @@ import 'soft_scaffold.dart';
 /// Minimal track model for the design layer.
 @immutable
 class SoftTrack {
-  const SoftTrack({required this.id, required this.title, required this.duration});
+  const SoftTrack({required this.id, required this.title, this.duration});
 
   final String id;
 
   /// File name without ".mp3" (PRD decision: file names, sorted A→Z).
   final String title;
-  final Duration duration;
+
+  /// Null until the file has been read (shown as "--:--").
+  final Duration? duration;
 }
 
 /// 03S · Library. Quiet flat list + floating mini player.
@@ -106,7 +108,7 @@ class LibraryScreen extends StatelessWidget {
                           confirmDismiss: (_) => onDelete(i),
                           child: TrackRow(
                             title: t.title,
-                            duration: formatDuration(t.duration),
+                            duration: t.duration == null ? '--:--' : formatDuration(t.duration!),
                             playing: i == currentIndex,
                             onTap: () => onTrackTap(i),
                           ),

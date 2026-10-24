@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:path/path.dart' as p;
 
+import '../library/mp3_library.dart';
 import 'screens/about_screen.dart';
 import 'screens/empty_library_screen.dart';
 import 'screens/library_screen.dart';
@@ -10,10 +14,14 @@ import 'theme.dart';
 import 'widgets/player_controls.dart';
 
 /// Clickable preview of "Key screens — Soft Keys" with fake playback state.
-/// Replace [PreviewPlayer] with just_audio / shared_preferences when wiring
-/// the real app; the screens only take values and callbacks.
+/// Importing is real (F1); replace [PreviewPlayer] with just_audio /
+/// shared_preferences when wiring playback. The screens only take values and
+/// callbacks.
 class DesignPreviewApp extends StatefulWidget {
-  const DesignPreviewApp({super.key});
+  const DesignPreviewApp({super.key, this.library});
+
+  /// Defaults to the app's Documents folder and the system file picker.
+  final Mp3Library? library;
 
   @override
   State<DesignPreviewApp> createState() => _DesignPreviewAppState();
@@ -21,6 +29,46 @@ class DesignPreviewApp extends StatefulWidget {
 
 class _DesignPreviewAppState extends State<DesignPreviewApp> {
   final _player = PreviewPlayer();
+  late final _library = widget.library ?? Mp3Library();
+  bool _importing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // An unreadable folder just means an empty library on launch.
+    unawaited(_reload().catchError((Object _) {}, test: (e) => e is FileSystemException));
+  }
+
+  Future<void> _reload() async {
+    final files = await _library.list();
+    _player.setTracks([
+      for (final f in files) SoftTrack(id: f.path, title: p.basenameWithoutExtension(f.path)),
+    ]..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase())));
+  }
+
+  Future<void> _import(BuildContext context) async {
+    if (_importing) return;
+    _importing = true;
+    final messenger = ScaffoldMessenger.of(context);
+    String? error;
+    try {
+      final result = await _library.importFromPicker();
+      if (result == null) return;
+      await _reload();
+      if (result.failed > 0) {
+        error = result.failed == 1
+            ? "Couldn't import 1 file."
+            : "Couldn't import ${result.failed} files.";
+      }
+    } on PlatformException {
+      error = "Couldn't open Files.";
+    } on FileSystemException {
+      error = "Couldn't save the files.";
+    } finally {
+      _importing = false;
+    }
+    if (error != null) messenger.showSnackBar(SnackBar(content: Text(error)));
+  }
 
   @override
   void dispose() {
@@ -36,15 +84,16 @@ class _DesignPreviewAppState extends State<DesignPreviewApp> {
       theme: buildSoftTheme(Brightness.light),
       darkTheme: buildSoftTheme(Brightness.dark),
       themeMode: ThemeMode.system,
-      home: _Home(player: _player),
+      home: _Home(player: _player, onImport: _import),
     );
   }
 }
 
 class _Home extends StatelessWidget {
-  const _Home({required this.player});
+  const _Home({required this.player, required this.onImport});
 
   final PreviewPlayer player;
+  final void Function(BuildContext context) onImport;
 
   void _openAbout(BuildContext context) {
     Navigator.of(context).push(MaterialPageRoute<void>(
@@ -74,7 +123,7 @@ class _Home extends StatelessWidget {
             trackCount: player.tracks.length,
             playing: player.playing,
             position: player.position,
-            duration: t.duration,
+            duration: player.lengthOf(t),
             shuffle: player.shuffle,
             repeat: player.repeat,
             onClose: () => Navigator.of(context).pop(),
@@ -121,7 +170,7 @@ class _Home extends StatelessWidget {
       builder: (context, _) {
         if (player.tracks.isEmpty) {
           return EmptyLibraryScreen(
-            onImport: player.importSamples,
+            onImport: () => onImport(context),
             onAbout: () => _openAbout(context),
           );
         }
@@ -132,10 +181,10 @@ class _Home extends StatelessWidget {
           playing: player.playing,
           progress: cur == null
               ? 0
-              : player.position.inMilliseconds / cur.duration.inMilliseconds,
+              : player.position.inMilliseconds / player.lengthOf(cur).inMilliseconds,
           onTrackTap: player.playAt,
           onDelete: (i) => _confirmDelete(context, i),
-          onImport: player.importSamples,
+          onImport: () => onImport(context),
           onAbout: () => _openAbout(context),
           onOpenPlayer: () => _openPlayer(context),
           onPlayPause: player.togglePlay,
@@ -152,7 +201,7 @@ class PreviewPlayer extends ChangeNotifier {
       final cur = current;
       if (!playing || cur == null) return;
       position += const Duration(seconds: 1);
-      if (position >= cur.duration) {
+      if (position >= lengthOf(cur)) {
         next();
       } else {
         notifyListeners();
@@ -170,27 +219,21 @@ class PreviewPlayer extends ChangeNotifier {
 
   SoftTrack? get current => currentIndex == null ? null : tracks[currentIndex!];
 
-  static const _samples = [
-    ('01 Night Drive', 252),
-    ('02 Slow Static', 228),
-    ('03 Paper Moon', 302),
-    ('Audiobook - Chapter 01', 1935),
-    ('Audiobook - Chapter 02', 1780),
-    ('Econ 101 - Lecture 03', 2890),
-    ('Econ 101 - Lecture 04', 3082),
-    ('Field Recording 0914', 727),
-    ('Morning Walk', 201),
-    ('Voice Memo 12', 58),
-    ('Weekend Mix', 3764),
-    ('Zine Reading', 1110),
-    ('한강 산책 녹음', 412),
-  ];
+  /// Stand-in length until just_audio reads the real one (F6).
+  Duration lengthOf(SoftTrack t) => t.duration ?? const Duration(minutes: 3);
 
-  void importSamples() {
-    tracks = [
-      for (final (title, secs) in _samples)
-        SoftTrack(id: title, title: title, duration: Duration(seconds: secs)),
-    ]..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+  /// Replaces the list, keeping the current track selected if it's still there.
+  void setTracks(List<SoftTrack> next) {
+    final currentId = current?.id;
+    tracks = next;
+    final i = currentId == null ? -1 : next.indexWhere((t) => t.id == currentId);
+    if (i >= 0) {
+      currentIndex = i;
+    } else {
+      currentIndex = null;
+      playing = false;
+      position = Duration.zero;
+    }
     notifyListeners();
   }
 
@@ -239,7 +282,8 @@ class PreviewPlayer extends ChangeNotifier {
   void seek(Duration d) {
     final cur = current;
     if (cur == null) return;
-    position = d < Duration.zero ? Duration.zero : (d > cur.duration ? cur.duration : d);
+    final len = lengthOf(cur);
+    position = d < Duration.zero ? Duration.zero : (d > len ? len : d);
     notifyListeners();
   }
 
