@@ -10,6 +10,7 @@ import 'screens/about_screen.dart';
 import 'screens/empty_library_screen.dart';
 import 'screens/library_screen.dart';
 import 'screens/now_playing_screen.dart';
+import 'screens/soft_scaffold.dart';
 import 'theme.dart';
 import 'widgets/player_controls.dart';
 
@@ -169,8 +170,10 @@ class _Home extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: player,
+      listenable: Listenable.merge([player, library]),
       builder: (context, _) {
+        // Plain ground until the first read, then the first-run screen or the list.
+        if (!library.loaded) return const SoftScaffold(child: SizedBox.expand());
         if (player.tracks.isEmpty) {
           return EmptyLibraryScreen(
             onImport: () => _import(context),

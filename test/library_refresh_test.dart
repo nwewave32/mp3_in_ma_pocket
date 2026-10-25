@@ -133,6 +133,67 @@ void main() {
     expect(find.text('Lecture 01'), findsOneWidget);
   });
 
+  testWidgets('F4: nothing shows until the first read, so the first-run screen never flashes',
+      (tester) async {
+    phone(tester);
+    final library = _ControlledLibrary();
+    await tester.pumpWidget(DesignPreviewApp(library: library));
+
+    expect(find.text('Import MP3s'), findsNothing);
+    expect(find.textContaining('LIBRARY'), findsNothing);
+
+    library.calls[0].complete(_files(['Lecture 01.mp3']));
+    await tester.pump();
+    expect(find.text('LIBRARY · 1'), findsOneWidget);
+  });
+
+  testWidgets('F4: an unreadable folder on first launch shows the first-run screen',
+      (tester) async {
+    phone(tester);
+    final library = _ControlledLibrary();
+    await tester.pumpWidget(DesignPreviewApp(library: library));
+
+    library.calls[0].completeError(const FileSystemException('Operation not permitted'));
+    await tester.pump();
+
+    expect(find.text('Import MP3s'), findsOneWidget);
+  });
+
+  testWidgets('F4: an unexpected error on first launch is logged and shows the first-run screen',
+      (tester) async {
+    phone(tester);
+    final library = _ControlledLibrary();
+    await tester.pumpWidget(DesignPreviewApp(library: library));
+
+    library.calls[0].completeError(StateError('no documents folder'));
+    await tester.pump();
+
+    expect(tester.takeException(), isStateError);
+    expect(find.text('Import MP3s'), findsOneWidget);
+  });
+
+  testWidgets('F4: deleting the last track brings back the first-run screen', (tester) async {
+    await start(tester, ['Lecture 01.mp3']);
+
+    await tester.drag(find.text('Lecture 01'), const Offset(-500, 0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete').last);
+    await settleIo(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Import MP3s'), findsOneWidget);
+    expect(find.textContaining('On My iPhone'), findsOneWidget);
+  });
+
+  testWidgets('F4: the list follows Files app order', (tester) async {
+    await start(tester, ['Lecture 10.mp3', 'lecture 2.mp3', 'Intro.mp3']);
+
+    final ys = [
+      for (final t in ['Intro', 'lecture 2', 'Lecture 10']) tester.getTopLeft(find.text(t)).dy,
+    ];
+    expect(ys, orderedEquals([...ys]..sort()));
+  });
+
   testWidgets('a read that started before a delete cannot bring the track back', (tester) async {
     phone(tester);
     final library = _ControlledLibrary();

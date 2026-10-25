@@ -17,6 +17,7 @@ lib/
     library_controller.dart ← 곡 목록 상태: 가져오기(F1)·복귀 시 새로 읽기(F2)·삭제(F5)
   library/
     mp3_library.dart  ← 앱 폴더(Documents)의 mp3 읽기·복사(F3 번호 붙이기)·삭제
+    title_order.dart  ← F4 정렬: 대소문자 무시, 숫자는 크기순, 맥에서 온 한글(NFD)도 같이 정렬
   design/
     tokens.dart      ← SoftColors(ThemeExtension, light/dark), SoftSpace, SoftRadius, SoftMotion, SoftShadows
     typography.dart  ← SoftFonts, SoftText
@@ -36,8 +37,9 @@ lib/
       about_screen.dart          (08S)
 test/
   design_screens_test.dart  ← 라이트/다크 렌더링, 첫 실행 → 가져오기 흐름
-  library_refresh_test.dart ← F2 복귀 시 새로 읽기, 읽기 겹침
+  library_refresh_test.dart ← F2 복귀 시 새로 읽기, 읽기 겹침, F4 첫 화면 전환
   mp3_library_test.dart     ← 가져오기·번호 붙이기·삭제
+  title_order_test.dart     ← F4 정렬 순서
   test_helpers.dart         ← 테스트 공용 도우미
 ```
 
@@ -57,7 +59,7 @@ flutter test           # 화면 렌더링 테스트
 2. **오렌지는 살아있는 것에만** — 재생/일시정지, Import, 진행 바, LED on. 오렌지 위 글자는 흰색이 아닌 잉크(#16181A).
 3. **도트 폰트는 LCD 안에서만** — 목록 가독성을 지키는 경계선.
 4. **누르면 반응한다** — 키는 1px 내려앉고 그림자가 안으로, 가벼운 햅틱(90ms).
-5. **사용자가 붙인 이름 존중** — 파일명 그대로, `.mp3`만 숨김, 알파벳순.
+5. **사용자가 붙인 이름 존중** — 파일명 그대로, `.mp3`만 숨김, 파일 앱과 같은 순서(알파벳순, 숫자는 크기순).
 6. **투명함 = 프라이버시** — "Your files never leave this phone."
 7. **광고 자리를 비워둠** — v2 배너(50pt)는 미니 플레이어 위. Now Playing·빈 화면엔 없음.
 

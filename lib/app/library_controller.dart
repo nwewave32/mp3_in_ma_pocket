@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 
 import '../design/screens/library_screen.dart';
 import '../library/mp3_library.dart';
+import '../library/title_order.dart';
 
 /// The library as the app sees it: tracks read from the app folder, kept in
 /// sync with the folder on import (F1), on return to the app (F2) and on
@@ -17,9 +18,14 @@ class LibraryController extends ChangeNotifier {
   int _generation = 0;
   bool _importing = false;
   bool _disposed = false;
+  bool _loaded = false;
 
-  /// F4: file names without ".mp3", A→Z ignoring case.
+  /// F4: file names without ".mp3", in [compareTitles] order.
   List<SoftTrack> get tracks => _tracks;
+
+  /// False until the folder has been read once, so the first-run screen
+  /// doesn't flash while a full library is loading.
+  bool get loaded => _loaded;
 
   /// Re-reads the folder. An unreadable folder keeps the current list.
   Future<void> refresh() async {
@@ -29,13 +35,25 @@ class LibraryController extends ChangeNotifier {
     final List<File> files;
     try {
       files = await _library.list();
-    } on FileSystemException {
+    } catch (e, stack) {
+      // A FileSystemException is expected (folder unreadable for a moment);
+      // anything else is a bug worth logging, but neither may crash the app.
+      if (e is! FileSystemException) {
+        FlutterError.reportError(
+            FlutterErrorDetails(exception: e, stack: stack, library: 'library'));
+      }
+      // Nothing to keep on the first read: show the first-run screen.
+      if (!_disposed && !_loaded) {
+        _loaded = true;
+        notifyListeners();
+      }
       return;
     }
     if (_disposed || generation != _generation) return;
+    _loaded = true;
     _tracks = [
       for (final f in files) SoftTrack(id: f.path, title: p.basenameWithoutExtension(f.path)),
-    ]..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+    ]..sort((a, b) => compareTitles(a.title, b.title));
     notifyListeners();
   }
 

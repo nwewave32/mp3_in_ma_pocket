@@ -13,7 +13,7 @@ class SoftTrack {
 
   final String id;
 
-  /// File name without ".mp3" (PRD decision: file names, sorted A→Z).
+  /// File name without ".mp3" (PRD decision: file names, in Files app order).
   final String title;
 
   /// Null until the file has been read (shown as "--:--").
