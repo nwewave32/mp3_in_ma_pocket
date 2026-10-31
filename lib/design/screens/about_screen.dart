@@ -15,7 +15,7 @@ class AboutScreen extends StatelessWidget {
     required this.onBack,
     required this.onPrivacyPolicy,
     required this.onLicenses,
-    this.copyright = '© 2026 [DEVELOPER NAME]',
+    this.copyright = '© 2026 ireuisu',
   });
 
   /// e.g. "1.0.0 (1)" — read from package_info_plus in the real app.
@@ -188,6 +188,7 @@ class _AboutRow extends StatelessWidget {
       button: true,
       label: iconLabel == null ? label : '$label, $iconLabel',
       excludeSemantics: true,
+      onTap: onTap,
       child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: onTap, child: row),
     );
   }

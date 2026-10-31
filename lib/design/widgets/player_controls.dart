@@ -274,20 +274,31 @@ class SoftRepeatSelector extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SoftWell(
-          width: _width,
-          height: 44,
-          alignment: null,
-          child: Stack(
-            children: [
-              AnimatedPositioned(
-                duration: SoftMotion.knob,
-                curve: SoftMotion.curve,
-                top: 4,
-                left: 4 + slot * value.index,
-                child: _Knob(width: _knob, child: SoftLed(on: value != SoftRepeat.off)),
+        // F11: tapping the switch steps off → all → one → off; the labels
+        // below pick a mode directly. Semantics come from the labels.
+        ExcludeSemantics(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onChanged(SoftRepeat.values[(value.index + 1) % SoftRepeat.values.length]);
+            },
+            child: SoftWell(
+              width: _width,
+              height: 44,
+              alignment: null,
+              child: Stack(
+                children: [
+                  AnimatedPositioned(
+                    duration: SoftMotion.knob,
+                    curve: SoftMotion.curve,
+                    top: 4,
+                    left: 4 + slot * value.index,
+                    child: _Knob(width: _knob, child: SoftLed(on: value != SoftRepeat.off)),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
         SizedBox(
@@ -301,6 +312,7 @@ class SoftRepeatSelector extends StatelessWidget {
                   checked: r == value,
                   label: 'Repeat ${r.label.toLowerCase()}',
                   excludeSemantics: true,
+                  onTap: () => onChanged(r),
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () {
@@ -309,7 +321,7 @@ class SoftRepeatSelector extends StatelessWidget {
                     },
                     child: SizedBox(
                       width: 58,
-                      height: 32,
+                      height: 44,
                       child: Center(
                         child: Text(
                           r.label,
@@ -388,6 +400,7 @@ class SoftMiniPlayer extends StatelessWidget {
               button: true,
               label: 'Open Now Playing: $title',
               excludeSemantics: true,
+              onTap: onOpen,
               child: GestureDetector(
                 onTap: onOpen,
                 child: LcdPanel(

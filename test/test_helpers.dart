@@ -50,3 +50,14 @@ Future<void> settleIo(WidgetTester tester) async {
     await tester.pump(const Duration(milliseconds: 1));
   }
 }
+
+/// Swipes a library row all the way left over several frames, like a finger.
+Future<void> swipeAllTheWay(WidgetTester tester, String title) async {
+  await tester.timedDrag(find.text(title), const Offset(-500, 0), const Duration(milliseconds: 300));
+  await tester.pumpAndSettle();
+}
+
+/// [count] silent MPEG-1 Layer III frames (128 kbps, 44.1 kHz, 417 bytes each).
+List<int> mpegFrames(int count) => [
+      for (var i = 0; i < count; i++) ...[0xFF, 0xFB, 0x90, 0x00, ...List.filled(413, 0)],
+    ];

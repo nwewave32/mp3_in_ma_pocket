@@ -5,6 +5,8 @@ import 'package:path/path.dart' as p;
 
 import 'package:mp3_in_ma_pocket/library/mp3_library.dart';
 
+import 'test_helpers.dart';
+
 void main() {
   late Directory root;
   late Directory library;
@@ -29,16 +31,16 @@ void main() {
 
   test('F1: copies several picked MP3s into the library folder', () async {
     final picks = [
-      await pickedFile('01 Night Drive.mp3', 'a'),
-      await pickedFile('Lecture 03.MP3', 'b'),
+      await pickedFile('01 Night Drive.mp3', 'ID3a'),
+      await pickedFile('Lecture 03.MP3', 'ID3b'),
     ];
 
     final result = await lib(picks).importFromPicker();
 
     expect(result!.imported, 2);
     expect(result.failed, 0);
-    expect(File(p.join(library.path, '01 Night Drive.mp3')).readAsStringSync(), 'a');
-    expect(File(p.join(library.path, 'Lecture 03.MP3')).readAsStringSync(), 'b');
+    expect(File(p.join(library.path, '01 Night Drive.mp3')).readAsStringSync(), 'ID3a');
+    expect(File(p.join(library.path, 'Lecture 03.MP3')).readAsStringSync(), 'ID3b');
     // Copied, not moved.
     expect(File(picks.first).existsSync(), isTrue);
   });
@@ -53,7 +55,22 @@ void main() {
     expect(File(p.join(library.path, 'notes.txt')).existsSync(), isFalse);
   });
 
-  test('cancelling the picker imports nothing', () async {
+  test('F1: a file renamed to .mp3 is not imported unless it is audio', () async {
+    final frame = File(p.join(picked.path, 'no tag.mp3'))..writeAsBytesSync(mpegFrames(2));
+    final picks = [
+      await pickedFile('report.mp3', '%PDF-1.4'),
+      await pickedFile('empty.mp3', ''),
+      frame.path,
+    ];
+
+    final result = await lib(picks).importFromPicker();
+
+    expect(result!.imported, 1);
+    expect(result.failed, 2);
+    expect(library.listSync().map((e) => p.basename(e.path)), ['no tag.mp3']);
+  });
+
+    test('cancelling the picker imports nothing', () async {
     expect(await lib(const []).importFromPicker(), isNull);
     expect(library.existsSync(), isFalse);
   });
@@ -71,23 +88,23 @@ void main() {
     File(p.join(library.path, 'Lecture.mp3')).writeAsStringSync('old');
     File(p.join(library.path, 'Lecture 2.mp3')).writeAsStringSync('old 2');
 
-    final result = await lib([await pickedFile('Lecture.mp3', 'new')]).importFromPicker();
+    final result = await lib([await pickedFile('Lecture.mp3', 'ID3new')]).importFromPicker();
 
     expect(result!.imported, 1);
     expect(File(p.join(library.path, 'Lecture.mp3')).readAsStringSync(), 'old');
     expect(File(p.join(library.path, 'Lecture 2.mp3')).readAsStringSync(), 'old 2');
-    expect(File(p.join(library.path, 'Lecture 3.mp3')).readAsStringSync(), 'new');
+    expect(File(p.join(library.path, 'Lecture 3.mp3')).readAsStringSync(), 'ID3new');
   });
 
   test('F3: duplicates within one import are numbered too, keeping the extension', () async {
     final other = await Directory(p.join(root.path, 'other')).create();
-    final second = File(p.join(other.path, 'Song.MP3'))..writeAsStringSync('b');
+    final second = File(p.join(other.path, 'Song.MP3'))..writeAsStringSync('ID3b');
 
-    final result = await lib([await pickedFile('Song.MP3', 'a'), second.path]).importFromPicker();
+    final result = await lib([await pickedFile('Song.MP3', 'ID3a'), second.path]).importFromPicker();
 
     expect(result!.imported, 2);
-    expect(File(p.join(library.path, 'Song.MP3')).readAsStringSync(), 'a');
-    expect(File(p.join(library.path, 'Song 2.MP3')).readAsStringSync(), 'b');
+    expect(File(p.join(library.path, 'Song.MP3')).readAsStringSync(), 'ID3a');
+    expect(File(p.join(library.path, 'Song 2.MP3')).readAsStringSync(), 'ID3b');
   });
 
   test('F5: delete removes the file; a file already gone is fine', () async {

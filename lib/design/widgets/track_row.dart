@@ -61,6 +61,8 @@ class TrackRow extends StatelessWidget {
       selected: playing,
       label: '$title, $duration${playing ? ', now playing' : ''}',
       excludeSemantics: true,
+      // The gesture's own tap action is excluded with the children.
+      onTap: onTap,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
@@ -85,7 +87,7 @@ class TrackDeleteBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = SoftColors.of(context);
     return Container(
-      alignment: Alignment.centerRight,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -93,10 +95,17 @@ class TrackDeleteBackground extends StatelessWidget {
           colors: [c.dangerTop, c.dangerBottom],
         ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: const Text(
-        'Delete',
-        style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      // One line always: shrinks instead of wrapping in the narrow open pane
+      // or with a large text size.
+      child: const FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          'Delete',
+          maxLines: 1,
+          softWrap: false,
+          style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }

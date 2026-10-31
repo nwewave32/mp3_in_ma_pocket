@@ -49,12 +49,9 @@ class NowPlayingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = SoftColors.of(context);
-    String two(int n) => n.toString().padLeft(2, '0');
     return SoftScaffold(
-      child: GestureDetector(
-        onVerticalDragEnd: (d) {
-          if ((d.primaryVelocity ?? 0) > 400) onClose();
-        },
+      child: _DragToClose(
+        onClose: onClose,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
           child: Column(
@@ -82,71 +79,126 @@ class NowPlayingScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              Expanded(
-                child: SoftPanel(
-                  radius: SoftRadius.device,
-                  padding: const EdgeInsets.fromLTRB(22, 22, 22, 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      LcdPanel(
-                        height: 172,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('TRACK ${two(trackNumber)}/${two(trackCount)}',
-                                    style: SoftText.lcdMeta(c)),
-                                Text(playing ? '▶ PLAY' : '‖ PAUSE', style: SoftText.lcdMeta(c)),
-                              ],
-                            ),
-                            Text(
-                              title.toUpperCase(),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: SoftText.lcdTitle(c),
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('SHUF ${shuffle ? 'ON' : 'OFF'}', style: SoftText.lcdMeta(c)),
-                                Text('RPT ${repeat.label}', style: SoftText.lcdMeta(c)),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      SoftSeekBar(position: position, duration: duration, onSeek: onSeek),
-                      const SizedBox(height: 20),
-                      Center(
-                        child: SoftTransport(
-                          playing: playing,
-                          onPrevious: onPrevious,
-                          onPlayPause: onPlayPause,
-                          onNext: onNext,
-                        ),
-                      ),
-                      const Spacer(),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SoftShuffleSwitch(value: shuffle, onChanged: onShuffleChanged),
-                          SoftRepeatSelector(value: repeat, onChanged: onRepeatChanged),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              Expanded(child: _device(c)),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// The player body: display, seek bar, transport, shuffle and repeat.
+  Widget _device(SoftColors c) => SoftPanel(
+        radius: SoftRadius.device,
+        padding: const EdgeInsets.fromLTRB(22, 22, 22, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _display(c),
+            const SizedBox(height: 20),
+            SoftSeekBar(position: position, duration: duration, onSeek: onSeek),
+            const SizedBox(height: 20),
+            Center(
+              child: SoftTransport(
+                playing: playing,
+                onPrevious: onPrevious,
+                onPlayPause: onPlayPause,
+                onNext: onNext,
+              ),
+            ),
+            const Spacer(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SoftShuffleSwitch(value: shuffle, onChanged: onShuffleChanged),
+                SoftRepeatSelector(value: repeat, onChanged: onRepeatChanged),
+              ],
+            ),
+          ],
+        ),
+      );
+
+  /// The LCD: track number, play state, title, shuffle and repeat.
+  Widget _display(SoftColors c) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return LcdPanel(
+      height: 172,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('TRACK ${two(trackNumber)}/${two(trackCount)}', style: SoftText.lcdMeta(c)),
+              Text(playing ? '▶ PLAY' : '‖ PAUSE', style: SoftText.lcdMeta(c)),
+            ],
+          ),
+          Text(
+            title.toUpperCase(),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: SoftText.lcdTitle(c),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('SHUF ${shuffle ? 'ON' : 'OFF'}', style: SoftText.lcdMeta(c)),
+              Text('RPT ${repeat.label}', style: SoftText.lcdMeta(c)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Follows a downward drag and closes past [_distance] or on a flick, so a
+/// slow pull on the grabber works as well as a quick swipe.
+class _DragToClose extends StatefulWidget {
+  const _DragToClose({required this.onClose, required this.child});
+
+  final VoidCallback onClose;
+  final Widget child;
+
+  @override
+  State<_DragToClose> createState() => _DragToCloseState();
+}
+
+class _DragToCloseState extends State<_DragToClose> {
+  static const double _distance = 120;
+  static const double _flickVelocity = 400;
+
+  double _offset = 0;
+  bool _dragging = false;
+
+  void _end(double velocity) {
+    if (_offset > _distance || velocity > _flickVelocity) {
+      widget.onClose();
+    } else {
+      setState(() {
+        _dragging = false;
+        _offset = 0;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onVerticalDragStart: (_) => setState(() => _dragging = true),
+      onVerticalDragUpdate: (d) =>
+          setState(() => _offset = (_offset + d.delta.dy).clamp(0.0, double.infinity)),
+      onVerticalDragEnd: (d) => _end(d.primaryVelocity ?? 0),
+      onVerticalDragCancel: () => _end(0),
+      child: AnimatedContainer(
+        duration: _dragging ? Duration.zero : SoftMotion.knob,
+        curve: SoftMotion.curve,
+        transform: Matrix4.translationValues(0, _offset, 0),
+        child: widget.child,
       ),
     );
   }

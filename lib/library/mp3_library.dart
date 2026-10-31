@@ -4,6 +4,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import 'mp3_sniff.dart';
+
 /// Opens a picker and returns the local paths of the files the user chose.
 typedef Mp3Picker = Future<List<String>> Function();
 
@@ -84,7 +86,7 @@ class Mp3Library {
     for (final source in sourcePaths) {
       // basename() keeps a crafted name like "../x.mp3" inside the library.
       final name = p.basename(source);
-      if (!isMp3(name)) {
+      if (!isMp3(name) || !await _looksLikeMp3(File(source))) {
         failed++;
         continue;
       }
@@ -106,6 +108,21 @@ class Mp3Library {
       }
     }
     return ImportResult(imported: imported, failed: failed);
+  }
+
+  /// Checks the first bytes, so a PDF renamed to ".mp3" isn't imported.
+  /// A file that can't be read counts as not an MP3.
+  static Future<bool> _looksLikeMp3(File file) async {
+    try {
+      final raf = await file.open();
+      try {
+        return looksLikeMp3(await raf.read(mp3SniffLength));
+      } finally {
+        await raf.close();
+      }
+    } on FileSystemException {
+      return false;
+    }
   }
 
   /// F3: "name.mp3", then "name 2.mp3", "name 3.mp3", … — never overwrites.

@@ -8,6 +8,7 @@ import 'package:mp3_in_ma_pocket/design/design_preview.dart';
 import 'package:mp3_in_ma_pocket/design/widgets/player_controls.dart';
 import 'package:mp3_in_ma_pocket/library/mp3_library.dart';
 
+import 'fake_audio_engine.dart';
 import 'test_helpers.dart';
 
 /// A library whose list() calls the test answers one by one.
@@ -31,6 +32,7 @@ List<File> _files(List<String> names) => [for (final n in names) File('/docs/$n'
 void main() {
   late Directory docs;
   late Mp3Library library;
+  late FakeAudioEngine engine;
 
   Future<void> start(WidgetTester tester, List<String> names) async {
     phone(tester);
@@ -40,7 +42,8 @@ void main() {
       File(p.join(docs.path, n)).writeAsStringSync('ID3');
     }
     library = Mp3Library(directory: () async => docs, picker: () async => const []);
-    await tester.pumpWidget(DesignPreviewApp(library: library));
+    engine = FakeAudioEngine();
+    await tester.pumpWidget(DesignPreviewApp(library: library, engine: engine));
     await settleIo(tester);
   }
 
@@ -82,10 +85,50 @@ void main() {
     expect(find.byType(SoftMiniPlayer), findsNothing);
   });
 
+  testWidgets('Now Playing closes when its track is removed in Files', (tester) async {
+    await start(tester, ['Lecture 01.mp3', 'Lecture 02.mp3']);
+    await tester.tap(find.text('Lecture 01'));
+    await tester.pump();
+    await tester.tap(find.bySemanticsLabel('Open Now Playing: Lecture 01'));
+    await tester.pumpAndSettle();
+    expect(find.text('NOW PLAYING'), findsOneWidget);
+
+    File(p.join(docs.path, 'Lecture 01.mp3')).deleteSync();
+    await returnToApp(tester);
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('NOW PLAYING'), findsNothing);
+    expect(find.text('LIBRARY · 1'), findsOneWidget);
+  });
+
+  testWidgets('a file that cannot be played shows a message', (tester) async {
+    phone(tester);
+    final root = await tempRoot(tester, 'broken_test');
+    docs = Directory(p.join(root.path, 'Documents'))..createSync();
+    final broken = File(p.join(docs.path, 'Broken.mp3'))..writeAsStringSync('not audio');
+    library = Mp3Library(directory: () async => docs, picker: () async => const []);
+    await tester.pumpWidget(DesignPreviewApp(
+      library: library,
+      engine: FakeAudioEngine(unplayable: {broken.path}),
+    ));
+    await settleIo(tester);
+
+    await tester.tap(find.text('Broken'));
+    await tester.pump();
+
+    expect(find.text('Couldn\'t play "Broken".'), findsOneWidget);
+    expect(find.byType(SoftMiniPlayer), findsNothing);
+  });
+
   testWidgets('changes to other tracks keep the current track and position', (tester) async {
     await start(tester, ['Lecture 01.mp3', 'Lecture 02.mp3']);
     await tester.tap(find.text('Lecture 01'));
-    await tester.pump(const Duration(seconds: 5));
+    await tester.pump();
+    engine
+      ..position = const Duration(seconds: 5)
+      ..emit();
+    await tester.pump();
     final before = miniPlayer(tester).progress;
     expect(before, greaterThan(0));
 
@@ -103,7 +146,7 @@ void main() {
   testWidgets('an older reload finishing late does not overwrite a newer one', (tester) async {
     phone(tester);
     final library = _ControlledLibrary();
-    await tester.pumpWidget(DesignPreviewApp(library: library));
+    await tester.pumpWidget(DesignPreviewApp(library: library, engine: FakeAudioEngine()));
     leaveAndReturn(tester);
     expect(library.calls, hasLength(2));
 
@@ -120,7 +163,7 @@ void main() {
   testWidgets('an unreadable folder keeps the current list', (tester) async {
     phone(tester);
     final library = _ControlledLibrary();
-    await tester.pumpWidget(DesignPreviewApp(library: library));
+    await tester.pumpWidget(DesignPreviewApp(library: library, engine: FakeAudioEngine()));
     library.calls[0].complete(_files(['Lecture 01.mp3']));
     await tester.pump();
 
@@ -137,7 +180,7 @@ void main() {
       (tester) async {
     phone(tester);
     final library = _ControlledLibrary();
-    await tester.pumpWidget(DesignPreviewApp(library: library));
+    await tester.pumpWidget(DesignPreviewApp(library: library, engine: FakeAudioEngine()));
 
     expect(find.text('Import MP3s'), findsNothing);
     expect(find.textContaining('LIBRARY'), findsNothing);
@@ -151,7 +194,7 @@ void main() {
       (tester) async {
     phone(tester);
     final library = _ControlledLibrary();
-    await tester.pumpWidget(DesignPreviewApp(library: library));
+    await tester.pumpWidget(DesignPreviewApp(library: library, engine: FakeAudioEngine()));
 
     library.calls[0].completeError(const FileSystemException('Operation not permitted'));
     await tester.pump();
@@ -163,7 +206,7 @@ void main() {
       (tester) async {
     phone(tester);
     final library = _ControlledLibrary();
-    await tester.pumpWidget(DesignPreviewApp(library: library));
+    await tester.pumpWidget(DesignPreviewApp(library: library, engine: FakeAudioEngine()));
 
     library.calls[0].completeError(StateError('no documents folder'));
     await tester.pump();
@@ -175,8 +218,7 @@ void main() {
   testWidgets('F4: deleting the last track brings back the first-run screen', (tester) async {
     await start(tester, ['Lecture 01.mp3']);
 
-    await tester.drag(find.text('Lecture 01'), const Offset(-500, 0));
-    await tester.pumpAndSettle();
+    await swipeAllTheWay(tester, 'Lecture 01');
     await tester.tap(find.text('Delete').last);
     await settleIo(tester);
     await tester.pumpAndSettle();
@@ -197,15 +239,14 @@ void main() {
   testWidgets('a read that started before a delete cannot bring the track back', (tester) async {
     phone(tester);
     final library = _ControlledLibrary();
-    await tester.pumpWidget(DesignPreviewApp(library: library));
+    await tester.pumpWidget(DesignPreviewApp(library: library, engine: FakeAudioEngine()));
     library.calls[0].complete(_files(['Lecture 01.mp3', 'Lecture 02.mp3']));
     await tester.pump();
 
     // Back from another app: a read starts and sees both files…
     leaveAndReturn(tester);
     // …while the user deletes Lecture 01.
-    await tester.drag(find.text('Lecture 01'), const Offset(-500, 0));
-    await tester.pumpAndSettle();
+    await swipeAllTheWay(tester, 'Lecture 01');
     await tester.tap(find.text('Delete').last);
     await tester.pump();
     expect(library.calls, hasLength(3));

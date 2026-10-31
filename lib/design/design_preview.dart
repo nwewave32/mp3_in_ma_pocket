@@ -1,42 +1,51 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app/library_controller.dart';
 import '../library/mp3_library.dart';
+import '../playback/audio_engine.dart';
+import '../playback/playback_controller.dart';
 import 'screens/about_screen.dart';
 import 'screens/empty_library_screen.dart';
 import 'screens/library_screen.dart';
 import 'screens/now_playing_screen.dart';
 import 'screens/soft_scaffold.dart';
 import 'theme.dart';
-import 'widgets/player_controls.dart';
 
-/// Clickable preview of "Key screens — Soft Keys" with fake playback state.
-/// The library is real ([LibraryController]); replace [PreviewPlayer] with
-/// just_audio / shared_preferences when wiring playback. The screens only take
-/// values and callbacks.
+/// The app on the "Key screens — Soft Keys" design: a real library
+/// ([LibraryController]) and real playback ([PlaybackController]). The screens
+/// only take values and callbacks.
 class DesignPreviewApp extends StatefulWidget {
-  const DesignPreviewApp({super.key, this.library});
+  const DesignPreviewApp({super.key, this.library, this.engine});
 
   /// Defaults to the app's Documents folder and the system file picker.
   final Mp3Library? library;
+
+  /// Defaults to just_audio.
+  final AudioEngine? engine;
 
   @override
   State<DesignPreviewApp> createState() => _DesignPreviewAppState();
 }
 
 class _DesignPreviewAppState extends State<DesignPreviewApp> with WidgetsBindingObserver {
-  final _player = PreviewPlayer();
+  late final _player = PlaybackController(widget.engine ?? JustAudioEngine());
   late final _library = LibraryController(widget.library ?? Mp3Library());
+  final _messenger = GlobalKey<ScaffoldMessengerState>();
+  late final StreamSubscription<SoftTrack> _failures;
 
   @override
   void initState() {
     super.initState();
     // The player plays whatever is in the library; a removed current track stops.
     _library.addListener(() => _player.setTracks(_library.tracks));
+    // Failures can come from any screen, or with the app in the background.
+    _failures = _player.failures.listen((t) => _messenger.currentState
+        ?.showSnackBar(SnackBar(content: Text('Couldn\'t play "${t.title}".'))));
     WidgetsBinding.instance.addObserver(this);
     _library.refresh();
   }
@@ -50,6 +59,7 @@ class _DesignPreviewAppState extends State<DesignPreviewApp> with WidgetsBinding
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _failures.cancel();
     _library.dispose();
     _player.dispose();
     super.dispose();
@@ -60,6 +70,7 @@ class _DesignPreviewAppState extends State<DesignPreviewApp> with WidgetsBinding
     return MaterialApp(
       title: 'MP3 in ma pocket',
       debugShowCheckedModeBanner: false,
+      scaffoldMessengerKey: _messenger,
       theme: buildSoftTheme(Brightness.light),
       darkTheme: buildSoftTheme(Brightness.dark),
       themeMode: ThemeMode.system,
@@ -71,7 +82,7 @@ class _DesignPreviewAppState extends State<DesignPreviewApp> with WidgetsBinding
 class _Home extends StatelessWidget {
   const _Home({required this.player, required this.library});
 
-  final PreviewPlayer player;
+  final PlaybackController player;
   final LibraryController library;
 
   Future<void> _import(BuildContext context) async {
@@ -113,14 +124,23 @@ class _Home extends StatelessWidget {
       builder: (context) => ListenableBuilder(
         listenable: player,
         builder: (context, _) {
-          final t = player.current!;
+          final t = player.current;
+          if (t == null) {
+            // The track's file went away (deleted in the Files app): close.
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              // Only once, and only this route, even if it rebuilds while closing.
+              final route = ModalRoute.of(context);
+              if (context.mounted && route != null && route.isCurrent) Navigator.of(context).pop();
+            });
+            return const SoftScaffold(child: SizedBox.expand());
+          }
           return NowPlayingScreen(
             title: t.title,
             trackNumber: player.currentIndex! + 1,
             trackCount: player.tracks.length,
             playing: player.playing,
             position: player.position,
-            duration: player.lengthOf(t),
+            duration: player.duration,
             shuffle: player.shuffle,
             repeat: player.repeat,
             onClose: () => Navigator.of(context).pop(),
@@ -136,35 +156,33 @@ class _Home extends StatelessWidget {
     ));
   }
 
-  Future<bool> _confirmDelete(BuildContext context, int index) async {
+  /// F5: confirms with an iOS action sheet; tapping outside cancels.
+  Future<void> _confirmDelete(BuildContext context, int index) async {
     final t = player.tracks[index];
     final messenger = ScaffoldMessenger.of(context);
-    final ok = await showDialog<bool>(
+    final ok = await showCupertinoModalPopup<bool>(
       context: context,
-      builder: (context) => AlertDialog.adaptive(
-        title: const Text('Delete this file?'),
-        content: Text('"${t.title}" will be removed from this app.'),
+      builder: (context) => CupertinoActionSheet(
+        message: Text('"${t.title}" will be deleted from this app. This can\'t be undone.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
+          CupertinoActionSheetAction(
+            isDestructiveAction: true,
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Delete'),
           ),
         ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
       ),
     );
-    if (ok == true) {
-      try {
-        await library.delete(t);
-      } on FileSystemException {
-        messenger.showSnackBar(const SnackBar(content: Text("Couldn't delete the file.")));
-      }
+    if (ok != true) return;
+    try {
+      await library.delete(t);
+    } on FileSystemException {
+      messenger.showSnackBar(const SnackBar(content: Text("Couldn't delete the file.")));
     }
-    // The list rebuilds from the model, so the Dismissible itself never removes.
-    return false;
   }
 
   @override
@@ -185,9 +203,9 @@ class _Home extends StatelessWidget {
           tracks: player.tracks,
           currentIndex: player.currentIndex,
           playing: player.playing,
-          progress: cur == null
+          progress: cur == null || player.duration == Duration.zero
               ? 0
-              : player.position.inMilliseconds / player.lengthOf(cur).inMilliseconds,
+              : player.position.inMilliseconds / player.duration.inMilliseconds,
           onTrackTap: player.playAt,
           onDelete: (i) => _confirmDelete(context, i),
           onImport: () => _import(context),
@@ -197,115 +215,5 @@ class _Home extends StatelessWidget {
         );
       },
     );
-  }
-}
-
-/// Fake player state for the preview only.
-class PreviewPlayer extends ChangeNotifier {
-  PreviewPlayer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      final cur = current;
-      if (!playing || cur == null) return;
-      position += const Duration(seconds: 1);
-      if (position >= lengthOf(cur)) {
-        next();
-      } else {
-        notifyListeners();
-      }
-    });
-  }
-
-  late final Timer _timer;
-  List<SoftTrack> tracks = const [];
-  int? currentIndex;
-  bool playing = false;
-  Duration position = Duration.zero;
-  bool shuffle = false;
-  SoftRepeat repeat = SoftRepeat.all;
-
-  SoftTrack? get current => currentIndex == null ? null : tracks[currentIndex!];
-
-  /// Stand-in length until just_audio reads the real one (F6).
-  Duration lengthOf(SoftTrack t) => t.duration ?? const Duration(minutes: 3);
-
-  /// Replaces the list, keeping the current track selected if it's still there.
-  void setTracks(List<SoftTrack> next) {
-    final currentId = current?.id;
-    tracks = next;
-    final i = currentId == null ? -1 : next.indexWhere((t) => t.id == currentId);
-    if (i >= 0) {
-      currentIndex = i;
-    } else {
-      currentIndex = null;
-      playing = false;
-      position = Duration.zero;
-    }
-    notifyListeners();
-  }
-
-  void playAt(int i) {
-    currentIndex = i;
-    position = Duration.zero;
-    playing = true;
-    notifyListeners();
-  }
-
-  void togglePlay() {
-    if (current == null) return;
-    playing = !playing;
-    notifyListeners();
-  }
-
-  /// F7: more than 3s in → restart, else previous track.
-  void previous() {
-    if (current == null) return;
-    if (position.inSeconds > 3 || currentIndex == 0) {
-      position = Duration.zero;
-    } else {
-      currentIndex = currentIndex! - 1;
-      position = Duration.zero;
-    }
-    notifyListeners();
-  }
-
-  void next() {
-    if (current == null) return;
-    if (repeat == SoftRepeat.one) {
-      position = Duration.zero;
-    } else if (currentIndex! < tracks.length - 1) {
-      currentIndex = currentIndex! + 1;
-      position = Duration.zero;
-    } else if (repeat == SoftRepeat.all) {
-      currentIndex = 0;
-      position = Duration.zero;
-    } else {
-      playing = false;
-      position = Duration.zero;
-    }
-    notifyListeners();
-  }
-
-  void seek(Duration d) {
-    final cur = current;
-    if (cur == null) return;
-    final len = lengthOf(cur);
-    position = d < Duration.zero ? Duration.zero : (d > len ? len : d);
-    notifyListeners();
-  }
-
-  void setShuffle(bool v) {
-    shuffle = v;
-    notifyListeners();
-  }
-
-  void setRepeat(SoftRepeat r) {
-    repeat = r;
-    notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
   }
 }

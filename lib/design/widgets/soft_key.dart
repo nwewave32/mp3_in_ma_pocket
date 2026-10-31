@@ -118,6 +118,8 @@ class _PressableState extends State<_Pressable> {
       enabled: _enabled,
       label: widget.semanticLabel,
       excludeSemantics: widget.semanticLabel != null,
+      // Excluding the children also drops the gesture's tap action.
+      onTap: widget.semanticLabel != null && _enabled ? widget.onPressed : null,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTapDown: (_) => _set(true),
