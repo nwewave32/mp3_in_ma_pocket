@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
@@ -141,6 +142,31 @@ void main() {
     expect(miniPlayer(tester).title, 'Lecture 01');
     expect(miniPlayer(tester).playing, isTrue);
     expect(miniPlayer(tester).progress, before);
+  });
+
+  testWidgets('F12: shuffle and repeat are back after the app is relaunched', (tester) async {
+    Future<void> openNowPlaying() async {
+      await tester.tap(find.text('Lecture 01'));
+      await tester.pump();
+      await tester.tap(find.bySemanticsLabel('Open Now Playing: Lecture 01'));
+      await tester.pumpAndSettle();
+    }
+
+    await start(tester, ['Lecture 01.mp3', 'Lecture 02.mp3']);
+    await openNowPlaying();
+    expect(find.text('SHUF OFF'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Shuffle'));
+    await tester.tap(find.bySemanticsLabel('Repeat one'));
+    await tester.pumpAndSettle();
+
+    // Relaunch: a new app with a new player, same preferences.
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(DesignPreviewApp(library: library, engine: FakeAudioEngine()));
+    await settleIo(tester);
+    await openNowPlaying();
+
+    expect(find.text('SHUF ON'), findsOneWidget);
+    expect(find.text('RPT ONE'), findsOneWidget);
   });
 
   testWidgets('an older reload finishing late does not overwrite a newer one', (tester) async {

@@ -22,6 +22,7 @@ lib/
   playback/
     audio_engine.dart       ← AudioEngine 인터페이스 + JustAudioEngine(just_audio, 오디오 세션 music)
     playback_controller.dart← 재생 상태: 목록 순서 재생(F6)·이전 3초 규칙(F7)·목록 변경 시 끊김 없이 큐 수정
+    playback_settings.dart  ← 셔플·반복 저장(F12, shared_preferences)
   design/
     tokens.dart      ← SoftColors(ThemeExtension, light/dark), SoftSpace, SoftRadius, SoftMotion, SoftShadows
     typography.dart  ← SoftFonts, SoftText
@@ -48,6 +49,8 @@ test/
   playback_controller_test.dart ← F6·F7, 재생 중 목록 변경
   audio_engine_test.dart    ← 다음/이전 곡 계산(셔플, 반복 끄기/전체/한 곡)
   fake_audio_engine.dart    ← 테스트용 가짜 AudioEngine
+  playback_settings_test.dart ← F12 재실행 후 복원, 불러오는 중 바꾼 값 우선
+  flutter_test_config.dart  ← 모든 테스트가 빈 메모리 설정으로 시작
   test_helpers.dart         ← 테스트 공용 도우미
 ```
 
@@ -90,10 +93,9 @@ flutter test           # 화면 렌더링 테스트
 
 ## 실제 앱에 연결할 때
 
-화면 위젯은 값과 콜백만 받습니다. 목록은 `LibraryController`, 재생은 `PlaybackController`(just_audio)에 연결돼 있습니다. 남은 연결:
+화면 위젯은 값과 콜백만 받습니다. 목록은 `LibraryController`, 재생은 `PlaybackController`(just_audio)에 연결돼 있고, 셔플·반복은 `PlaybackSettings`(shared_preferences)에 저장됩니다. 남은 연결:
 
 - 잠금화면·제어센터(F9): `just_audio_background`
-- 셔플·반복 유지(F12): `shared_preferences`
 - 앱 버전: `package_info_plus`
 - 개인정보 처리방침 열기: `url_launcher` (URL은 PRD 미결 사항)
 - 화면 문구: 다국어 대비 ARB(`flutter_localizations` + `intl`)로 분리

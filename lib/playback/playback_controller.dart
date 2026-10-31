@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../design/screens/library_screen.dart';
 import '../design/widgets/player_controls.dart';
 import 'audio_engine.dart';
+import 'playback_settings.dart';
 
 /// Playback of the library (F6, F7), backed by an [AudioEngine].
 ///
@@ -12,15 +13,23 @@ import 'audio_engine.dart';
 /// next/previous, repeat and shuffle follow the library order. The current
 /// track is tracked by path, so library changes never jump to another song.
 class PlaybackController extends ChangeNotifier {
-  PlaybackController(this._engine) {
+  /// With [settings], shuffle and repeat are restored and saved (F12).
+  PlaybackController(this._engine, {PlaybackSettings? settings}) : _settings = settings {
     _subscriptions = [
       _engine.changes.listen((_) => _onEngineChange()),
       _engine.errors.listen(_onEngineError),
     ];
     _enqueue(() => _engine.setLoop(_loopFor(repeat)));
+    // Queued, so a track tapped right at launch already plays in the saved modes.
+    if (settings != null) _enqueue(() => _restore(settings));
   }
 
   final AudioEngine _engine;
+  final PlaybackSettings? _settings;
+
+  /// Set once the user picks a mode, so a slow restore can't undo it.
+  bool _shuffleChosen = false;
+  bool _repeatChosen = false;
   late final List<StreamSubscription<Object?>> _subscriptions;
   final _failures = StreamController<SoftTrack>.broadcast();
 
@@ -132,14 +141,35 @@ class PlaybackController extends ChangeNotifier {
 
   void setShuffle(bool v) {
     shuffle = v;
+    _shuffleChosen = true;
     _notify();
     _enqueue(() => _engine.setShuffle(v));
+    final settings = _settings;
+    if (settings != null) _enqueue(() => settings.saveShuffle(v));
   }
 
   void setRepeat(SoftRepeat r) {
     repeat = r;
+    _repeatChosen = true;
     _notify();
     _enqueue(() => _engine.setLoop(_loopFor(r)));
+    final settings = _settings;
+    if (settings != null) _enqueue(() => settings.saveRepeat(r));
+  }
+
+  Future<void> _restore(PlaybackSettings settings) async {
+    final saved = await settings.load();
+    final s = saved.shuffle;
+    final r = saved.repeat;
+    if (s != null && !_shuffleChosen) {
+      shuffle = s;
+      await _engine.setShuffle(s);
+    }
+    if (r != null && !_repeatChosen) {
+      repeat = r;
+      await _engine.setLoop(_loopFor(r));
+    }
+    _notify();
   }
 
   static EngineLoop _loopFor(SoftRepeat r) => switch (r) {

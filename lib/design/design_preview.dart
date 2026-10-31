@@ -9,6 +9,7 @@ import '../app/library_controller.dart';
 import '../library/mp3_library.dart';
 import '../playback/audio_engine.dart';
 import '../playback/playback_controller.dart';
+import '../playback/playback_settings.dart';
 import 'screens/about_screen.dart';
 import 'screens/empty_library_screen.dart';
 import 'screens/library_screen.dart';
@@ -20,7 +21,7 @@ import 'theme.dart';
 /// ([LibraryController]) and real playback ([PlaybackController]). The screens
 /// only take values and callbacks.
 class DesignPreviewApp extends StatefulWidget {
-  const DesignPreviewApp({super.key, this.library, this.engine});
+  const DesignPreviewApp({super.key, this.library, this.engine, this.settings});
 
   /// Defaults to the app's Documents folder and the system file picker.
   final Mp3Library? library;
@@ -28,12 +29,18 @@ class DesignPreviewApp extends StatefulWidget {
   /// Defaults to just_audio.
   final AudioEngine? engine;
 
+  /// Defaults to the app's preferences.
+  final PlaybackSettings? settings;
+
   @override
   State<DesignPreviewApp> createState() => _DesignPreviewAppState();
 }
 
 class _DesignPreviewAppState extends State<DesignPreviewApp> with WidgetsBindingObserver {
-  late final _player = PlaybackController(widget.engine ?? JustAudioEngine());
+  late final _player = PlaybackController(
+    widget.engine ?? JustAudioEngine(),
+    settings: widget.settings ?? PlaybackSettings(),
+  );
   late final _library = LibraryController(widget.library ?? Mp3Library());
   final _messenger = GlobalKey<ScaffoldMessengerState>();
   late final StreamSubscription<SoftTrack> _failures;
