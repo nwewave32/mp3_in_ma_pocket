@@ -26,7 +26,7 @@
   - [ ] F9 잠금화면·제어센터·에어팟 (`audio_service`로 작업 중, 아직 커밋 전)
   - [ ] F8 백그라운드·무음 스위치 무시 실기기 확인 (`UIBackgroundModes` audio, 오디오 세션 music은 설정됨)
   - [ ] F10 전화·알람 끝나면 이어 재생, 이어폰 빠지면 일시정지 실기기 확인
-  - [ ] 앱 아이콘 확정 (`design/app-icon/`에 시안 작업 중)
+  - [x] 앱 아이콘 확정: Mixtape Pocket (`design/app-icon/`, `ios/Runner` 적용)
   - [ ] About 화면 연결: 앱 버전(`package_info_plus`), 개인정보 처리방침 열기(`url_launcher`)
   - [ ] 화면 문구를 ARB로 분리 (다국어 대비)
   - [ ] 곡 1,000개 스크롤, 탭 후 0.5초 안에 재생 시작 확인
