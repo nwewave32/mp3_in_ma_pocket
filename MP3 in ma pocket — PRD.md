@@ -75,7 +75,7 @@ Flutter로 만들고, 아래 패키지를 씁니다. 현재 프로토타입(`lib
 | 영역 | 패키지 | 용도 |
 | --- | --- | --- |
 | 재생 | `just_audio` | mp3 재생, 재생목록, 셔플·반복 |
-| 백그라운드·잠금화면 | `just_audio_background` | 잠금화면·제어센터 연동 (부족하면 `audio_service`로 교체) |
+| 백그라운드·잠금화면 | `audio_service` | 잠금화면·제어센터 연동 (`just_audio_background`는 잠금화면 이전/다음이 F7·반복 한 곡 규칙과 달라 교체) |
 | 파일 선택 | `file_picker` | mp3 다중 선택 |
 | 경로 | `path_provider` | 앱 내부 폴더 위치 |
 | 설정 저장 | `shared_preferences` | 셔플·반복 설정 유지 |

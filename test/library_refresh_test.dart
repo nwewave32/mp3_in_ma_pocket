@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
@@ -8,6 +9,7 @@ import 'package:path/path.dart' as p;
 import 'package:mp3_in_ma_pocket/design/design_preview.dart';
 import 'package:mp3_in_ma_pocket/design/widgets/player_controls.dart';
 import 'package:mp3_in_ma_pocket/library/mp3_library.dart';
+import 'package:mp3_in_ma_pocket/playback/playback_controller.dart';
 
 import 'fake_audio_engine.dart';
 import 'test_helpers.dart';
@@ -167,6 +169,47 @@ void main() {
 
     expect(find.text('SHUF ON'), findsOneWidget);
     expect(find.text('RPT ONE'), findsOneWidget);
+  });
+
+  testWidgets('F9: the lock screen gets the app\'s player', (tester) async {
+    PlaybackController? connected;
+    phone(tester);
+    final root = await tempRoot(tester, 'lock_test');
+    docs = Directory(p.join(root.path, 'Documents'))..createSync();
+    File(p.join(docs.path, 'Lecture 01.mp3')).writeAsStringSync('ID3');
+    library = Mp3Library(directory: () async => docs, picker: () async => const []);
+    await tester.pumpWidget(DesignPreviewApp(
+      library: library,
+      engine: FakeAudioEngine(),
+      connectLockScreen: (player) async => connected = player,
+    ));
+    await settleIo(tester);
+
+    await tester.tap(find.text('Lecture 01'));
+    await tester.pump();
+    expect(connected!.current!.title, 'Lecture 01');
+  });
+
+  testWidgets('F9: if the lock screen cannot be reached, it is logged and playback still works',
+      (tester) async {
+    phone(tester);
+    final root = await tempRoot(tester, 'lock_fail_test');
+    docs = Directory(p.join(root.path, 'Documents'))..createSync();
+    File(p.join(docs.path, 'Lecture 01.mp3')).writeAsStringSync('ID3');
+    library = Mp3Library(directory: () async => docs, picker: () async => const []);
+    await tester.pumpWidget(DesignPreviewApp(
+      library: library,
+      engine: FakeAudioEngine(),
+      connectLockScreen: (_) async => throw PlatformException(code: 'unavailable'),
+    ));
+    await settleIo(tester);
+
+    expect(tester.takeException(), isA<PlatformException>());
+
+    await tester.tap(find.text('Lecture 01'));
+    await tester.pump();
+    expect(miniPlayer(tester).title, 'Lecture 01');
+    expect(miniPlayer(tester).playing, isTrue);
   });
 
   testWidgets('an older reload finishing late does not overwrite a newer one', (tester) async {

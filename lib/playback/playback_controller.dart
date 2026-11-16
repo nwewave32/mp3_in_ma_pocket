@@ -108,13 +108,18 @@ class PlaybackController extends ChangeNotifier {
     });
   }
 
-  void togglePlay() {
-    if (current == null) return;
-    if (_engine.playing) {
-      _enqueue(_engine.pause);
-    } else {
-      _engine.play();
-    }
+  void togglePlay() => _engine.playing ? pause() : play();
+
+  /// Resumes the current track; does nothing before one has been started.
+  void play() {
+    if (current == null || _engine.playing) return;
+    _engine.play();
+  }
+
+  /// Pauses the current track.
+  void pause() {
+    if (current == null || !_engine.playing) return;
+    _enqueue(_engine.pause);
   }
 
   /// F7: 3s or more in → back to the start, else the previous track.
@@ -124,6 +129,9 @@ class PlaybackController extends ChangeNotifier {
         ? _engine.seek(Duration.zero)
         : _engine.seekToPrevious());
   }
+
+  /// Whether [next] would move: false on the last track with repeat off.
+  bool get hasNext => current != null && _engine.hasNext;
 
   void next() {
     if (current == null) return;
@@ -143,7 +151,10 @@ class PlaybackController extends ChangeNotifier {
     shuffle = v;
     _shuffleChosen = true;
     _notify();
-    _enqueue(() => _engine.setShuffle(v));
+    _enqueue(() async {
+      await _engine.setShuffle(v);
+      _notify(); // hasNext follows the new play order.
+    });
     final settings = _settings;
     if (settings != null) _enqueue(() => settings.saveShuffle(v));
   }
@@ -152,7 +163,10 @@ class PlaybackController extends ChangeNotifier {
     repeat = r;
     _repeatChosen = true;
     _notify();
-    _enqueue(() => _engine.setLoop(_loopFor(r)));
+    _enqueue(() async {
+      await _engine.setLoop(_loopFor(r));
+      _notify(); // hasNext follows the new repeat mode.
+    });
     final settings = _settings;
     if (settings != null) _enqueue(() => settings.saveRepeat(r));
   }

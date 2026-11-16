@@ -10,6 +10,7 @@ import '../library/mp3_library.dart';
 import '../playback/audio_engine.dart';
 import '../playback/playback_controller.dart';
 import '../playback/playback_settings.dart';
+import '../playback/system_controls.dart';
 import 'screens/about_screen.dart';
 import 'screens/empty_library_screen.dart';
 import 'screens/library_screen.dart';
@@ -21,7 +22,13 @@ import 'theme.dart';
 /// ([LibraryController]) and real playback ([PlaybackController]). The screens
 /// only take values and callbacks.
 class DesignPreviewApp extends StatefulWidget {
-  const DesignPreviewApp({super.key, this.library, this.engine, this.settings});
+  const DesignPreviewApp({
+    super.key,
+    this.library,
+    this.engine,
+    this.settings,
+    this.connectLockScreen,
+  });
 
   /// Defaults to the app's Documents folder and the system file picker.
   final Mp3Library? library;
@@ -31,6 +38,10 @@ class DesignPreviewApp extends StatefulWidget {
 
   /// Defaults to the app's preferences.
   final PlaybackSettings? settings;
+
+  /// F9: puts the player on the lock screen. Defaults to [SystemControls]
+  /// with the real player, and to nothing with a test [engine].
+  final Future<Object?> Function(PlaybackController player)? connectLockScreen;
 
   @override
   State<DesignPreviewApp> createState() => _DesignPreviewAppState();
@@ -55,6 +66,13 @@ class _DesignPreviewAppState extends State<DesignPreviewApp> with WidgetsBinding
         ?.showSnackBar(SnackBar(content: Text('Couldn\'t play "${t.title}".'))));
     WidgetsBinding.instance.addObserver(this);
     _library.refresh();
+    final connect = widget.connectLockScreen ?? (widget.engine == null ? SystemControls.start : null);
+    if (connect != null) {
+      // Playback works without it, so a failure is only logged.
+      unawaited(connect(_player).then<void>((_) {}, onError: (Object e, StackTrace stack) {
+        FlutterError.reportError(FlutterErrorDetails(exception: e, stack: stack, library: 'playback'));
+      }));
+    }
   }
 
   /// F2: files copied in through the Files app show up when the app returns.
