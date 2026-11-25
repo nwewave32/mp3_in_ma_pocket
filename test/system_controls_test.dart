@@ -54,6 +54,16 @@ void main() {
     expect(state.systemActions, contains(MediaAction.seek));
   });
 
+  test('9-1: the length is whole seconds, so elapsed and remaining change together', () async {
+    await playAt(0);
+    engine
+      ..duration = const Duration(minutes: 3, seconds: 20, milliseconds: 500)
+      ..emit();
+    await pumpEventQueue();
+
+    expect(controls.mediaItem.value!.duration, const Duration(minutes: 3, seconds: 20));
+  });
+
   test('play, pause and the AirPods click', () async {
     await playAt(0);
 

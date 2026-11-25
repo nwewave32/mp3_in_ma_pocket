@@ -25,6 +25,19 @@ String formatDuration(Duration d) {
   return h > 0 ? '$h:${m.toString().padLeft(2, '0')}:$s' : '$m:$s';
 }
 
+/// A track's length as shown everywhere (list, seek bar, lock screen): whole
+/// seconds, dropping the fraction like [formatDuration] does.
+Duration shownLength(Duration d) => Duration(seconds: d.inSeconds);
+
+/// Elapsed and remaining time for the seek bar, both from the same whole
+/// second, so they change at the same moment and always add up to the length.
+({Duration elapsed, Duration remaining}) seekTimes(Duration position, Duration duration) {
+  final length = shownLength(duration);
+  final secs = position.inSeconds.clamp(0, length.inSeconds);
+  final elapsed = Duration(seconds: secs);
+  return (elapsed: elapsed, remaining: length - elapsed);
+}
+
 /// Prev / Play-Pause / Next in one shared socket.
 class SoftTransport extends StatelessWidget {
   const SoftTransport({
@@ -101,6 +114,9 @@ class SoftSeekBar extends StatelessWidget {
   final Duration duration;
   final ValueChanged<Duration>? onSeek;
 
+  /// How far a VoiceOver swipe up or down moves.
+  static const _voiceOverStep = Duration(seconds: 15);
+
   double get _value => duration.inMilliseconds == 0
       ? 0
       : (position.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0);
@@ -108,7 +124,7 @@ class SoftSeekBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = SoftColors.of(context);
-    final remaining = duration - position;
+    final times = seekTimes(position, duration);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -125,15 +141,16 @@ class SoftSeekBar extends StatelessWidget {
           return Semantics(
             slider: true,
             label: 'Seek',
-            value: formatDuration(position),
-            increasedValue: formatDuration(position + const Duration(seconds: 15)),
-            decreasedValue: formatDuration(position - const Duration(seconds: 15)),
+            // VoiceOver reads the same clamped whole seconds as the labels below.
+            value: formatDuration(times.elapsed),
+            increasedValue: formatDuration(seekTimes(position + _voiceOverStep, duration).elapsed),
+            decreasedValue: formatDuration(seekTimes(position - _voiceOverStep, duration).elapsed),
             onIncrease: onSeek == null
                 ? null
-                : () => onSeek!(position + const Duration(seconds: 15)),
+                : () => onSeek!(position + _voiceOverStep),
             onDecrease: onSeek == null
                 ? null
-                : () => onSeek!(position - const Duration(seconds: 15)),
+                : () => onSeek!(position - _voiceOverStep),
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTapDown: (d) => seekTo(d.localPosition.dx),
@@ -204,8 +221,8 @@ class SoftSeekBar extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(formatDuration(position), style: SoftText.time(c)),
-            Text('-${formatDuration(remaining)}', style: SoftText.time(c)),
+            Text(formatDuration(times.elapsed), style: SoftText.time(c)),
+            Text('-${formatDuration(times.remaining)}', style: SoftText.time(c)),
           ],
         ),
       ],

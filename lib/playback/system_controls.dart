@@ -1,6 +1,7 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
 
+import '../design/widgets/player_controls.dart';
 import 'playback_controller.dart';
 
 /// F9: the lock screen, Control Center and AirPods show the current track and
@@ -26,7 +27,9 @@ class SystemControls extends BaseAudioHandler {
 
   void _sync() {
     final track = _player.current;
-    final duration = _player.duration == Duration.zero ? null : _player.duration;
+    // Whole seconds, like the app, so the lock screen's elapsed and remaining
+    // times change together.
+    final duration = _player.duration == Duration.zero ? null : shownLength(_player.duration);
     final item = track == null ? null : MediaItem(id: track.id, title: track.title, duration: duration);
     final old = mediaItem.value;
     // MediaItem equality is by id only; the length arrives after the track loads.
