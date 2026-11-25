@@ -1,6 +1,6 @@
 # MP3 in ma pocket — 프로젝트 노트
 
-2026-11-07 기준 · 출처: `MP3 in ma pocket — PRD.md`, `design/README.md`, git 기록
+2026-11-26 기준 · 출처: `MP3 in ma pocket — PRD.md`, `design/README.md`, git 기록, `docs/worklog/`
 
 ## 🎯 목표
 
@@ -23,17 +23,26 @@
   - [x] F6 목록 순서 재생 · F7 이전 버튼 3초 규칙
   - [x] F11 셔플, 반복 끄기 → 전체 → 한 곡
   - [x] F12 셔플·반복 설정 유지
-  - [ ] F9 잠금화면·제어센터·에어팟 (`audio_service`로 작업 중, 아직 커밋 전)
-  - [ ] F8 백그라운드·무음 스위치 무시 실기기 확인 (`UIBackgroundModes` audio, 오디오 세션 music은 설정됨)
-  - [ ] F10 전화·알람 끝나면 이어 재생, 이어폰 빠지면 일시정지 실기기 확인
+  - [x] F9 잠금화면·제어센터·에어팟 (`audio_service`, 2026-11-16 `53b74f6`). 테스트만 통과했고 실기기 확인은 아직
+  - [x] F8 백그라운드·무음 스위치 무시: `UIBackgroundModes` audio, 오디오 세션 music 설정됨
+  - [x] F10 전화·알람 뒤 이어 재생, 이어폰 빠지면 일시정지: 따로 코드를 쓰지 않음. `just_audio`의 기본 설정(`handleInterruptions`)이 `audio_session`으로 처리함
+  - [ ] 실기기 확인 (`flutter run --release`, 2026-11-26)
+    - [x] F8 무음 스위치, 화면 잠금·다른 앱 전환 중 재생
+    - [x] F9 잠금화면·제어센터·에어팟 (9-1 시간 표시는 고친 뒤 다시 확인)
+    - [x] F10 이어폰·에어팟 빠지면 일시정지, 알람 끝나면 이어 재생
+    - [x] F12 완전히 끄고 홈 아이콘으로 다시 켜도 셔플·반복 유지, 앱 아이콘 표시
+    - [ ] 9-1 시간 표시 수정 뒤 다시 확인
+    - [ ] F10 전화가 끝난 뒤 이어 재생 (Apple ID가 다른 기기에서 걸어야 함)
   - [x] 앱 아이콘 확정: Mixtape Pocket (`design/app-icon/`, `ios/Runner` 적용)
   - [ ] About 화면 연결: 앱 버전(`package_info_plus`), 개인정보 처리방침 열기(`url_launcher`)
   - [ ] 화면 문구를 ARB로 분리 (다국어 대비)
   - [ ] 곡 1,000개 스크롤, 탭 후 0.5초 안에 재생 시작 확인
+  - [ ] About 화면 넘침 테스트 2개 실패 해결 (`test/design_screens_test.dart`, 라이트·다크. F12 전부터 실패)
 - [ ] 배포
   - [ ] Apple Developer Program 가입 (연 $99)
   - [ ] 개인정보 처리방침 URL, 스크린샷 준비, 개인정보 라벨 '데이터 수집 안 함'
   - [ ] 심사 메모에 백그라운드 오디오 사용 이유 설명
+- [x] 커밋별 작업 기록: `docs/worklog/` (F9, 앱 아이콘 커밋까지)
 - [ ] README 작성 (지금 `README.md`는 Flutter 기본 템플릿 그대로)
 
 ## 🧭 설계 메모 · 결정 사항
@@ -54,6 +63,10 @@
 | 2026-10-31 | 삭제는 `flutter_slidable`로 iOS식: 조금 밀면 Delete 열린 채 멈춤, 끝까지 밀면 액션 시트로 확인 | iOS 기본 앱과 같은 동작, VoiceOver는 행 동작으로 삭제 |
 | 2026-10-31 | 셔플·반복은 `shared_preferences`에 저장, 첫 곡을 불러오기 전에 복원 | F12. 읽을 수 없는 값이면 셔플 끄기·반복 전체로 되돌림 |
 | 2026-10-31 | 잠금화면 연동을 `just_audio_background` 대신 `audio_service`로 | `just_audio_background`의 잠금화면 이전/다음이 F7(3초 규칙)·반복 한 곡 규칙과 다르게 동작함 |
+| 2026-10-31 | 반복이 꺼져 있고 마지막 곡이면 잠금화면 다음 버튼을 회색으로 | 눌러도 아무 일이 없는 버튼을 켜 두지 않음. 이전 버튼은 첫 곡에서도 곡 처음으로 가므로 항상 켬 |
+| 2026-10-31 | 잠금화면 재생 위치는 1초 넘게 어긋날 때만 다시 보냄 | 재생 중에는 iOS가 시간을 알아서 올리므로, 자주 보낼 필요가 없음 |
+| 2026-11-26 | 곡 길이는 어디서나 초 단위로 버림해서 쓰고, 남은 시간은 "길이 − 지난 시간(초)"으로 계산 | 지난 시간과 남은 시간이 같은 순간에 바뀌고 합이 항상 목록의 길이와 같음. 잠금화면에도 같은 길이를 보냄 |
+| 2026-11-16 | 앱 아이콘은 Mixtape Pocket, 1024px 한 장짜리 세트(라이트·다크·틴트) | Xcode가 나머지 크기를 만듦. 다크·틴트는 iOS 18부터 보이고, 그보다 낮은 iOS에서는 라이트가 나옴 |
 
 ## 🐛 트러블슈팅 로그
 
@@ -65,7 +78,7 @@
 
 ### 해결
 
-`audio_service`로 바꾸고 `system_controls.dart`에서 잠금화면·제어센터·에어팟 명령을 `PlaybackController`로 보낸다. `system_controls_test.dart`로 원격 명령이 앱 규칙을 따르는지 확인한다. (작업 중, 아직 커밋 전)
+`audio_service`로 바꾸고 `system_controls.dart`에서 잠금화면·제어센터·에어팟 명령을 `PlaybackController`로 보낸다. `system_controls_test.dart`로 원격 명령이 앱 규칙을 따르는지 확인한다. (2026-11-16 `53b74f6` 커밋, 실기기 확인은 아직)
 
 ---
 
@@ -103,10 +116,29 @@
 
 `mp3_sniff.dart`에서 파일 앞부분을 읽어 ID3 태그나 MPEG 프레임 두 개가 이어지는지 확인한다. 재생할 수 없는 파일은 "Couldn't play"를 한 번만 보여준다.
 
+### 문제 5: 지난 시간과 남은 시간이 바뀌는 순간이 다름 (실기기 9-1)
+
+### 원인
+
+곡 길이는 보통 3:20.5처럼 소수점 아래가 있다. 앱은 지난 시간(`position`)과 남은 시간(`duration - position`)을 따로 초 단위로 버림해서, 둘이 약 0.5초 차이로 바뀌었다. 잠금화면도 소수점이 있는 길이를 받아서 같은 일이 생겼다.
+
+### 해결
+
+`player_controls.dart`의 `shownLength()`, `seekTimes()`로 길이를 초 단위로 맞추고, 남은 시간은 그 길이에서 지난 시간(초)을 빼서 구한다. `system_controls.dart`도 잠금화면에 `shownLength()`를 보낸다. VoiceOver가 읽는 시간과 15초 앞뒤 값도 같은 규칙으로 0과 길이 사이에 맞췄다. `seek_times_test.dart`, `system_controls_test.dart`에 테스트를 넣었다.
+
+---
+
+### 참고: 실기기 확인 중 앱 문제가 아니었던 것
+
+- Mac의 FaceTime으로 같은 Apple ID인 아이폰에 걸면 울리지 않는다. 자기 자신에게 거는 통화라서, 전화 끊김 확인(10-1, 10-2)은 Apple ID가 다른 기기로 해야 한다.
+- 시계 앱 타이머가 울리지 않고 재생을 멈추며 화면이 잠긴 것은 타이머의 "타이머 종료 시"가 "재생 중단"으로 되어 있을 때의 동작이다. iOS 26에서는 이 값이 기본으로 다시 잡힌다는 보고가 있다.
+
 ## 📚 참고 자료
 
 - `MP3 in ma pocket — PRD.md`: 요구사항 F1~F12, 비기능 요구사항, 미결 사항
 - `design/README.md`, `design/tokens.json`: Soft Keys 디자인 원칙, 화면, 컴포넌트 규칙, 토큰
+- `design/app-icon/README.md`: 앱 아이콘 원본(SVG, PNG)과 적용 방법
+- `docs/worklog/`: 커밋별 작업 기록
 - [just_audio](https://pub.dev/packages/just_audio)
 - [audio_service](https://pub.dev/packages/audio_service)
 - [file_picker](https://pub.dev/packages/file_picker)
@@ -125,7 +157,7 @@
   - 겹치는 폴더 읽기, 첫 실행 깜빡임, 이름만 바꾼 파일처럼 놓치기 쉬운 경우를 테스트로 남겼다.
 - **아쉬운 점**:
   - 잠금화면 패키지를 처음에 `just_audio_background`로 정했다가 F7 규칙과 맞지 않아 바꿨다. 요구사항과 맞는지 미리 확인했으면 한 번에 정할 수 있었다.
-  - 백그라운드 재생(F8)과 전화·이어폰 처리(F10)는 아직 실기기에서 확인하지 않았다.
+  - 백그라운드 재생(F8), 잠금화면(F9), 전화·이어폰 처리(F10)를 아직 실기기에서 확인하지 않았다. F9는 실기기 확인 전에 커밋했다.
   - 앱 이름, 최소 iOS 버전, 제목 표시(파일명 vs ID3), 출시 국가, 개인정보 처리방침 위치가 아직 미결이다.
 - **다음에 적용할 것**:
   - 패키지를 고르기 전에 요구사항 중 까다로운 규칙(이번에는 F7, 반복 한 곡)을 그 패키지로 할 수 있는지 먼저 확인한다.
