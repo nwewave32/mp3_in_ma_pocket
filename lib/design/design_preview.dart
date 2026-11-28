@@ -168,13 +168,13 @@ class _Home extends StatelessWidget {
   void _openAbout(BuildContext context) {
     Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (context) => AboutScreen(
-        version: '1.0.0 (1)',
+        version: '1.0.0 (2)',
         onBack: () => Navigator.of(context).pop(),
         onPrivacyPolicy: () => _openPrivacyPolicy(context),
         onLicenses: () => showLicensePage(
           context: context,
           applicationName: 'pocket.mp3',
-          applicationVersion: '1.0.0 (1)',
+          applicationVersion: '1.0.0 (2)',
         ),
       ),
     ));
