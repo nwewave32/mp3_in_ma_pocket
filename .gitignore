@@ -71,3 +71,6 @@ app.*.map.json
 .claude/settings.local.json
 .flutter-plugins
 .notion_imported.json
+
+# Worklogs (kept locally, uploaded to Notion)
+docs/worklog/
