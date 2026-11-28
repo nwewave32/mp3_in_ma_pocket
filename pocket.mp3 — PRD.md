@@ -70,7 +70,7 @@ Oct 10, 2026 · @Kepler
 
 ## 기술 스택
 
-Flutter로 만들고, 아래 패키지를 씁니다. 현재 프로토타입(`lib/main.dart`)에는 F1, F2, F4\~F7이 일부 구현돼 있습니다.
+Flutter로 만들고, 아래 패키지를 씁니다. F1\~F12는 모두 구현됐습니다(2026-11-16, 진행 상황은 로드맵 참고).
 
 | 영역 | 패키지 | 용도 |
 | --- | --- | --- |
@@ -101,8 +101,8 @@ Flutter로 만들고, 아래 패키지를 씁니다. 현재 프로토타입(`lib
 ## 미결 사항
 
 - [x] 앱스토어에 올릴 앱 이름: **pocket.mp3** (2026-11-28, 이전 가칭 'MP3 in ma pocket'). 번들 ID `com.ireuisu.pocketmp3`
-- [ ] 최소 iOS 버전 (제안: iOS 15)
-- [ ] 목록에 보여줄 제목: 파일명 vs mp3 태그(ID3)의 곡 제목·아티스트
-- [ ] 출시 국가
-- [x] 개인정보 처리방침을 올릴 곳: https://ireuisu-legal.vercel.app/pocket-mp3/privacy/ (2026-11-28 결정, 페이지는 아직 없음)
-- [ ] 앱 아이콘과 기본 색상
+- [ ] 최소 iOS 버전 (제안: iOS 15). 지금은 14.0(`file_picker` 13 요구). 2027년 4월부터는 15.0 이상이어야 App Store Connect에 올릴 수 있으므로 그 전에 정해야 함
+- [ ] 목록에 보여줄 제목: 파일명 vs mp3 태그(ID3)의 곡 제목·아티스트. v1.0은 파일명
+- [x] 출시 국가: 중국 본토를 뺀 전체 (2026-11-28)
+- [x] 개인정보 처리방침을 올릴 곳: https://ireuisu-legal.vercel.app/pocket-mp3/privacy/ (2026-11-28 결정 및 게시, 한·영)
+- [x] 앱 아이콘과 기본 색상: 아이콘은 Mixtape Pocket (2026-11-16, 라이트·다크·틴트), 색은 Soft Keys 디자인 토큰(`design/tokens.json`, 강조색 오렌지)
