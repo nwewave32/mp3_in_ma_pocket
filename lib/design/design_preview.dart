@@ -4,7 +4,9 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../app/legal.dart';
 import '../app/library_controller.dart';
 import '../library/mp3_library.dart';
 import '../playback/audio_engine.dart';
@@ -28,6 +30,8 @@ class DesignPreviewApp extends StatefulWidget {
     this.engine,
     this.settings,
     this.connectLockScreen,
+    this.openUrl,
+    this.privacyPolicy,
   });
 
   /// Defaults to the app's Documents folder and the system file picker.
@@ -42,6 +46,12 @@ class DesignPreviewApp extends StatefulWidget {
   /// F9: puts the player on the lock screen. Defaults to [SystemControls]
   /// with the real player, and to nothing with a test [engine].
   final Future<Object?> Function(PlaybackController player)? connectLockScreen;
+
+  /// Opens a link in the browser. Defaults to url_launcher.
+  final Future<bool> Function(Uri url)? openUrl;
+
+  /// The privacy policy page. Defaults to [privacyPolicyUrl].
+  final Uri? privacyPolicy;
 
   @override
   State<DesignPreviewApp> createState() => _DesignPreviewAppState();
@@ -99,16 +109,43 @@ class _DesignPreviewAppState extends State<DesignPreviewApp> with WidgetsBinding
       theme: buildSoftTheme(Brightness.light),
       darkTheme: buildSoftTheme(Brightness.dark),
       themeMode: ThemeMode.system,
-      home: _Home(player: _player, library: _library),
+      home: _Home(
+        player: _player,
+        library: _library,
+        privacyPolicy: widget.privacyPolicy ?? privacyPolicyUrl(),
+        openUrl: widget.openUrl ?? _openInBrowser,
+      ),
     );
   }
 }
 
+Future<bool> _openInBrowser(Uri url) => launchUrl(url, mode: LaunchMode.externalApplication);
+
 class _Home extends StatelessWidget {
-  const _Home({required this.player, required this.library});
+  const _Home({
+    required this.player,
+    required this.library,
+    required this.privacyPolicy,
+    required this.openUrl,
+  });
 
   final PlaybackController player;
   final LibraryController library;
+  final Uri? privacyPolicy;
+  final Future<bool> Function(Uri url) openUrl;
+
+  Future<void> _openPrivacyPolicy(BuildContext context) async {
+    final url = privacyPolicy;
+    if (url == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    var opened = false;
+    try {
+      opened = await openUrl(url);
+    } on PlatformException {
+      // Shown below.
+    }
+    if (!opened) messenger.showSnackBar(const SnackBar(content: Text("Couldn't open the privacy policy.")));
+  }
 
   Future<void> _import(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -133,7 +170,7 @@ class _Home extends StatelessWidget {
       builder: (context) => AboutScreen(
         version: '1.0.0 (1)',
         onBack: () => Navigator.of(context).pop(),
-        onPrivacyPolicy: () {},
+        onPrivacyPolicy: () => _openPrivacyPolicy(context),
         onLicenses: () => showLicensePage(
           context: context,
           applicationName: 'MP3 in ma pocket',
