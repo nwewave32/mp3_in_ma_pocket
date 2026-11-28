@@ -1,0 +1,18 @@
+#!/bin/sh
+# .git/hooks/post-commit
+# 커밋 직후 Claude Code를 헤드리스로 띄워 작업 기록 md 작성 + 노션 업로드.
+# 끄고 싶을 때:  WORKLOG_SKIP=1 git commit ...
+# 백그라운드로 돌아가므로 커밋 자체는 지연되지 않음. 로그: .git/worklog.log
+
+[ -n "$WORKLOG_SKIP" ] && exit 0
+command -v claude >/dev/null 2>&1 || exit 0
+
+# rebase / amend 중복 실행 방지
+[ -d "$(git rev-parse --git-dir)/rebase-merge" ] && exit 0
+
+ROOT="$(git rev-parse --show-toplevel)"
+(
+  cd "$ROOT" || exit 0
+  claude -p "/worklog HEAD" --allowedTools "Bash(git *)" "Bash(python3 *)" "Read" "Write" \
+    >> "$(git rev-parse --git-dir)/worklog.log" 2>&1
+) &
