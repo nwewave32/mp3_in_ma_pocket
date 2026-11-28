@@ -68,11 +68,19 @@ int? neighborInPlayOrder({
 }
 
 class JustAudioEngine implements AudioEngine {
+  /// F8: the music category ("playback" on iOS) plays with the silent switch
+  /// on and keeps going when the screen locks (UIBackgroundModes audio is set
+  /// in Info.plist).
+  static const sessionConfiguration = AudioSessionConfiguration.music();
+
+  /// F10: just_audio pauses for a call or alarm and resumes after it, and
+  /// pauses when headphones are unplugged. This is its default; it's spelled
+  /// out so it can't be turned off unnoticed.
+  static const handlesInterruptions = true;
+
   JustAudioEngine() {
-    // Music category: plays with the silent switch on and keeps going when the
-    // screen locks (UIBackgroundModes audio is set in Info.plist).
     unawaited(AudioSession.instance
-        .then((s) => s.configure(const AudioSessionConfiguration.music()))
+        .then((s) => s.configure(sessionConfiguration))
         .catchError((Object e, StackTrace stack) {
       // Without it the silent switch mutes playback; make that visible.
       FlutterError.reportError(FlutterErrorDetails(exception: e, stack: stack, library: 'playback'));
@@ -86,7 +94,7 @@ class JustAudioEngine implements AudioEngine {
     ];
   }
 
-  final _player = AudioPlayer();
+  final _player = AudioPlayer(handleInterruptions: handlesInterruptions);
   final _changes = StreamController<void>.broadcast();
   final _errors = StreamController<String>.broadcast();
   late final List<StreamSubscription<Object?>> _subscriptions;

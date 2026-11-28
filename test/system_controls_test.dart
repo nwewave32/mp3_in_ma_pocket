@@ -161,4 +161,42 @@ void main() {
     expect(controls.mediaItem.value, isNull);
     expect(controls.playbackState.value.processingState, AudioProcessingState.idle);
   });
+
+  group('F10', () {
+    test('a call pauses: the app and the lock screen show paused, then playing again', () async {
+      await playAt(0);
+      engine.position = const Duration(seconds: 42);
+
+      // just_audio pauses for the call, then resumes once it ends.
+      engine.playing = false;
+      engine.emit();
+      await pumpEventQueue();
+      expect(player.playing, isFalse);
+      expect(controls.playbackState.value.playing, isFalse);
+      expect(controls.playbackState.value.controls, contains(MediaControl.play));
+
+      engine.playing = true;
+      engine.emit();
+      await pumpEventQueue();
+      expect(player.playing, isTrue);
+      expect(controls.playbackState.value.playing, isTrue);
+      expect(player.current!.title, 'A');
+      expect(player.position, const Duration(seconds: 42));
+    });
+
+    test('after headphones are unplugged, play resumes where it stopped', () async {
+      await playAt(1);
+      engine.position = const Duration(seconds: 10);
+      engine.playing = false; // just_audio pauses when headphones go
+      engine.emit();
+      await pumpEventQueue();
+
+      await remote(controls.play);
+
+      expect(player.playing, isTrue);
+      expect(player.current!.title, 'B');
+      expect(engine.position, const Duration(seconds: 10));
+      expect(engine.loads, 1);
+    });
+  });
 }
