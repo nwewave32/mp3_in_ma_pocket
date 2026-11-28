@@ -70,3 +70,4 @@ app.*.map.json
 .fvm/
 .claude/settings.local.json
 .flutter-plugins
+.notion_imported.json

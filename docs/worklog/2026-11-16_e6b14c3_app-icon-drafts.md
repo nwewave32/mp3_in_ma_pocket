@@ -1,7 +1,7 @@
 ---
 제목: 앱 아이콘 시안 추가(라이트, 다크, 틴트)
 작업 날짜: 2026-11-16
-프로젝트: MP3 in ma pocket
+프로젝트: pocket.mp3
 작업 유형: 설계
 상태: 완료
 사용 AI: Claude Code (Claude Opus 5.5)

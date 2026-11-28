@@ -1,7 +1,7 @@
 ---
 제목: 앱을 다시 열어도 셔플·반복 설정 유지(F12)
 작업 날짜: 2026-10-31
-프로젝트: MP3 in ma pocket
+프로젝트: pocket.mp3
 작업 유형: 기능 개발
 상태: 완료
 사용 AI: Claude Code (Claude Opus 5.5)

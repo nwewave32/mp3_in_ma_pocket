@@ -1,7 +1,7 @@
 ---
 제목: 잠금화면·제어센터·에어팟에서 플레이어 조작(F9)
 작업 날짜: 2026-11-16
-프로젝트: MP3 in ma pocket
+프로젝트: pocket.mp3
 작업 유형: 기능 개발
 상태: 완료
 사용 AI: Claude Code (Claude Opus 5.5)

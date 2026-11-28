@@ -1,7 +1,7 @@
 ---
 제목: Soft Keys 디자인 프리뷰, PRD, iOS 프로젝트로 저장소 첫 커밋
 작업 날짜: 2026-10-24
-프로젝트: MP3 in ma pocket
+프로젝트: pocket.mp3
 작업 유형: 설계
 상태: 완료
 사용 AI: Claude Code (Claude Opus 5.5)
