@@ -43,7 +43,7 @@ void main() {
     await withRealIo(tester, () => tester.tap(find.text('Import MP3s')));
 
     expect(find.text('LIBRARY · 2'), findsOneWidget);
-    // F4: A→Z, ".mp3" hidden, length unknown until playback reads it.
+    // F4: A→Z, ".mp3" hidden; files with no audio frame have no length.
     final a = tester.getTopLeft(find.text('A song')).dy;
     final b = tester.getTopLeft(find.text('b song')).dy;
     expect(a, lessThan(b));

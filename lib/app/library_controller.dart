@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -20,7 +21,8 @@ class LibraryController extends ChangeNotifier {
   bool _disposed = false;
   bool _loaded = false;
 
-  /// F4: file names without ".mp3", in [compareTitles] order.
+  /// F4: file names without ".mp3", in [compareTitles] order, with each
+  /// track's length once it has been read.
   List<SoftTrack> get tracks => _tracks;
 
   /// False until the folder has been read once, so the first-run screen
@@ -52,8 +54,47 @@ class LibraryController extends ChangeNotifier {
     if (_disposed || generation != _generation) return;
     _loaded = true;
     _tracks = [
-      for (final f in files) SoftTrack(id: f.path, title: p.basenameWithoutExtension(f.path)),
+      for (final f in files)
+        SoftTrack(
+          id: f.path,
+          title: p.basenameWithoutExtension(f.path),
+          duration: _library.cachedLength(f.path),
+        ),
     ]..sort((a, b) => compareTitles(a.title, b.title));
+    notifyListeners();
+    unawaited(_measure(generation));
+  }
+
+  /// How many lengths to read before showing them, so a large first import
+  /// fills in as it goes without rebuilding for every file.
+  static const _lengthBatch = 50;
+
+  /// Reads the lengths not known yet, after the list is already on screen.
+  /// A newer [refresh] takes over, keeping what was read so far.
+  Future<void> _measure(int generation) async {
+    bool current() => !_disposed && generation == _generation;
+    final tracks = _tracks;
+    var changed = 0;
+    try {
+      for (final t in tracks) {
+        if (!current()) return;
+        if (await _library.lengthOf(t.id) != t.duration) changed++;
+        if (changed >= _lengthBatch && current()) {
+          _applyLengths();
+          changed = 0;
+        }
+      }
+    } catch (e, stack) {
+      FlutterError.reportError(FlutterErrorDetails(exception: e, stack: stack, library: 'library'));
+    }
+    if (changed > 0 && current()) _applyLengths();
+  }
+
+  void _applyLengths() {
+    _tracks = [
+      for (final t in _tracks)
+        SoftTrack(id: t.id, title: t.title, duration: _library.cachedLength(t.id)),
+    ];
     notifyListeners();
   }
 

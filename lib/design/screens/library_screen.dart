@@ -38,10 +38,15 @@ class LibraryScreen extends StatelessWidget {
     required this.onAbout,
     required this.onOpenPlayer,
     required this.onPlayPause,
+    this.currentDuration,
   });
 
   final List<SoftTrack> tracks;
   final int? currentIndex;
+
+  /// The player's length for the current track, once loaded. Shown on its
+  /// row so it matches Now Playing and the lock screen.
+  final Duration? currentDuration;
   final bool playing;
   final double progress;
   final ValueChanged<int> onTrackTap;
@@ -122,12 +127,13 @@ class LibraryScreen extends StatelessWidget {
             itemCount: tracks.length,
             itemBuilder: (context, i) {
               final t = tracks[i];
+              final length = i == currentIndex ? currentDuration ?? t.duration : t.duration;
               return _DeletableRow(
                 key: ValueKey(t.id),
                 onDelete: () => onDelete(i),
                 builder: (onTap) => TrackRow(
                   title: t.title,
-                  duration: t.duration == null ? '--:--' : formatDuration(t.duration!),
+                  duration: length == null ? '--:--' : formatDuration(length),
                   playing: i == currentIndex,
                   onTap: onTap,
                 ),

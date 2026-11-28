@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import 'mp3_length.dart';
 import 'mp3_sniff.dart';
 
 /// Opens a picker and returns the local paths of the files the user chose.
@@ -31,6 +32,29 @@ class Mp3Library {
 
   static bool isMp3(String path) => p.extension(path).toLowerCase() == '.mp3';
 
+  /// Lengths read so far, with the file's size and modified time then.
+  final _lengths = <String, ({int size, DateTime modified, Duration? length})>{};
+
+  /// The length [lengthOf] last read for [path], without touching the file.
+  Duration? cachedLength(String path) => _lengths[path]?.length;
+
+  /// The track's length from its MP3 header, or null if it can't be read.
+  /// Read again only when the file's size or modified time changes.
+  Future<Duration?> lengthOf(String path) async {
+    final stat = await File(path).stat();
+    if (stat.type == FileSystemEntityType.notFound) {
+      _lengths.remove(path);
+      return null;
+    }
+    final known = _lengths[path];
+    if (known != null && known.size == stat.size && known.modified == stat.modified) {
+      return known.length;
+    }
+    final length = await readMp3Length(File(path));
+    _lengths[path] = (size: stat.size, modified: stat.modified, length: length);
+    return length;
+  }
+
   /// MP3 files currently in the library folder (unsorted).
   Future<List<File>> list() async {
     final dir = await _directory();
@@ -48,6 +72,7 @@ class Mp3Library {
     if (!p.isWithin(dir.path, path)) {
       throw ArgumentError.value(path, 'path', 'is not in the library');
     }
+    _lengths.remove(path);
     try {
       await File(path).delete();
     } on PathNotFoundException {

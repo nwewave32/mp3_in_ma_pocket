@@ -237,6 +237,7 @@ class _Home extends StatelessWidget {
           onAbout: () => _openAbout(context),
           onOpenPlayer: () => _openPlayer(context),
           onPlayPause: player.togglePlay,
+          currentDuration: player.duration == Duration.zero ? null : player.duration,
         );
       },
     );

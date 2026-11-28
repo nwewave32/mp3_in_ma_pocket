@@ -61,3 +61,16 @@ Future<void> swipeAllTheWay(WidgetTester tester, String title) async {
 List<int> mpegFrames(int count) => [
       for (var i = 0; i < count; i++) ...[0xFF, 0xFB, 0x90, 0x00, ...List.filled(413, 0)],
     ];
+
+/// A VBR MP3 whose Xing header says it has [frames] frames (1152 samples
+/// each at 44.1 kHz), followed by one audio frame.
+List<int> xingMp3(int frames) {
+  final first = [0xFF, 0xFB, 0x90, 0x00, ...List.filled(413, 0)];
+  // MPEG-1 stereo: the Xing tag follows 32 bytes of side info.
+  first.setAll(36, [
+    ...'Xing'.codeUnits,
+    0, 0, 0, 1, // flags: frame count present
+    frames >> 24 & 0xFF, frames >> 16 & 0xFF, frames >> 8 & 0xFF, frames & 0xFF,
+  ]);
+  return [...first, ...mpegFrames(1)];
+}

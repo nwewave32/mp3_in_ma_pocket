@@ -328,4 +328,59 @@ void main() {
     expect(find.text('LIBRARY · 1'), findsOneWidget);
     expect(find.text('Lecture 01'), findsNothing);
   });
+
+  group('F4: track lengths', () {
+    /// Lengths are read after the list shows, a few file reads per track.
+    Future<void> readLengths(WidgetTester tester) async {
+      for (var i = 0; i < 4; i++) {
+        await settleIo(tester);
+      }
+    }
+
+    Future<void> startWith(WidgetTester tester, Map<String, List<int>> files) async {
+      await start(tester, const []);
+      for (final e in files.entries) {
+        File(p.join(docs.path, e.key)).writeAsBytesSync(e.value);
+      }
+      await returnToApp(tester);
+      await readLengths(tester);
+    }
+
+    testWidgets('each track shows its length, read from the file', (tester) async {
+      await startWith(tester, {
+        'Album.mp3': xingMp3(6891), // VBR, 180.01 s
+        'Jingle.mp3': mpegFrames(100), // CBR, 2.6 s
+        'Notes.mp3': 'ID3'.codeUnits, // no audio frame
+      });
+
+      expect(find.text('3:00'), findsOneWidget);
+      expect(find.text('0:02'), findsOneWidget);
+      expect(find.text('--:--'), findsOneWidget);
+    });
+
+    testWidgets("the playing track shows the player's length, as Now Playing does", (tester) async {
+      await startWith(tester, {'Jingle.mp3': mpegFrames(100)});
+      expect(find.text('0:02'), findsOneWidget);
+
+      await tester.tap(find.text('Jingle'));
+      await tester.pump();
+      engine.duration = const Duration(seconds: 3, milliseconds: 400);
+      engine.emit();
+      await tester.pump();
+
+      expect(find.text('0:03'), findsOneWidget);
+      expect(find.text('0:02'), findsNothing);
+    });
+
+    testWidgets('a file replaced through the Files app shows its new length on return', (tester) async {
+      await startWith(tester, {'Jingle.mp3': mpegFrames(100)});
+      expect(find.text('0:02'), findsOneWidget);
+
+      File(p.join(docs.path, 'Jingle.mp3')).writeAsBytesSync(mpegFrames(500)); // 13 s
+      await returnToApp(tester);
+      await readLengths(tester);
+
+      expect(find.text('0:13'), findsOneWidget);
+    });
+  });
 }
