@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
-import 'package:mp3_in_ma_pocket/library/mp3_library.dart';
+import 'package:pocket_mp3/library/mp3_library.dart';
 
 import 'test_helpers.dart';
 

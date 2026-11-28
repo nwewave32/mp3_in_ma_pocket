@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:mp3_in_ma_pocket/library/mp3_sniff.dart';
+import 'package:pocket_mp3/library/mp3_sniff.dart';
 
 import 'test_helpers.dart';
 

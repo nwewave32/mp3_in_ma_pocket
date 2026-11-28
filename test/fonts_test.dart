@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:mp3_in_ma_pocket/design/licenses.dart';
-import 'package:mp3_in_ma_pocket/design/screens/library_screen.dart';
-import 'package:mp3_in_ma_pocket/design/theme.dart';
+import 'package:pocket_mp3/design/licenses.dart';
+import 'package:pocket_mp3/design/screens/library_screen.dart';
+import 'package:pocket_mp3/design/theme.dart';
 
 import 'test_helpers.dart';
 

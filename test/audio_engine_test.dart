@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:mp3_in_ma_pocket/playback/audio_engine.dart';
+import 'package:pocket_mp3/playback/audio_engine.dart';
 
 int? _step(int? current, List<int> order, int offset, {bool wrap = false}) =>
     neighborInPlayOrder(current: current, order: order, offset: offset, wrap: wrap);

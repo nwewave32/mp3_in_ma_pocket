@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:mp3_in_ma_pocket/library/title_order.dart';
+import 'package:pocket_mp3/library/title_order.dart';
 
 List<String> _sorted(List<String> titles) => [...titles]..sort(compareTitles);
 

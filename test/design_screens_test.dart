@@ -6,14 +6,14 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
-import 'package:mp3_in_ma_pocket/design/design_preview.dart';
-import 'package:mp3_in_ma_pocket/design/screens/about_screen.dart';
-import 'package:mp3_in_ma_pocket/design/screens/library_screen.dart';
-import 'package:mp3_in_ma_pocket/design/screens/now_playing_screen.dart';
-import 'package:mp3_in_ma_pocket/design/theme.dart';
-import 'package:mp3_in_ma_pocket/design/widgets/player_controls.dart';
-import 'package:mp3_in_ma_pocket/design/widgets/track_row.dart';
-import 'package:mp3_in_ma_pocket/library/mp3_library.dart';
+import 'package:pocket_mp3/design/design_preview.dart';
+import 'package:pocket_mp3/design/screens/about_screen.dart';
+import 'package:pocket_mp3/design/screens/library_screen.dart';
+import 'package:pocket_mp3/design/screens/now_playing_screen.dart';
+import 'package:pocket_mp3/design/theme.dart';
+import 'package:pocket_mp3/design/widgets/player_controls.dart';
+import 'package:pocket_mp3/design/widgets/track_row.dart';
+import 'package:pocket_mp3/library/mp3_library.dart';
 
 import 'fake_audio_engine.dart';
 import 'test_helpers.dart';

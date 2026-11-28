@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:mp3_in_ma_pocket/playback/audio_engine.dart';
+import 'package:pocket_mp3/playback/audio_engine.dart';
 
 /// The iOS settings the requirements rest on. They aren't code, so a change
 /// in Xcode would otherwise go unnoticed until a device check.

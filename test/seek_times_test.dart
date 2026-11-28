@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:mp3_in_ma_pocket/design/theme.dart';
-import 'package:mp3_in_ma_pocket/design/widgets/player_controls.dart';
+import 'package:pocket_mp3/design/theme.dart';
+import 'package:pocket_mp3/design/widgets/player_controls.dart';
 
 /// Seek bar times: elapsed and remaining tick together (device check 9-1),
 /// and VoiceOver reads the same values.

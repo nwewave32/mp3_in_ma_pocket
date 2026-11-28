@@ -1,10 +1,10 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:mp3_in_ma_pocket/design/screens/library_screen.dart';
-import 'package:mp3_in_ma_pocket/design/widgets/player_controls.dart';
-import 'package:mp3_in_ma_pocket/playback/playback_controller.dart';
-import 'package:mp3_in_ma_pocket/playback/system_controls.dart';
+import 'package:pocket_mp3/design/screens/library_screen.dart';
+import 'package:pocket_mp3/design/widgets/player_controls.dart';
+import 'package:pocket_mp3/playback/playback_controller.dart';
+import 'package:pocket_mp3/playback/system_controls.dart';
 
 import 'fake_audio_engine.dart';
 

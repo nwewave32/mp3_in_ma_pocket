@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:mp3_in_ma_pocket/playback/audio_engine.dart';
+import 'package:pocket_mp3/playback/audio_engine.dart';
 
 /// An [AudioEngine] that keeps a queue in memory and plays nothing. Tests
 /// move it along with [finishTrack] or by setting [position].
