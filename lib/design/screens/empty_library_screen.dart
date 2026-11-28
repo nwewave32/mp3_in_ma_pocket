@@ -26,7 +26,7 @@ class EmptyLibraryScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             SoftHeader(
-              title: 'MP3 IN MA POCKET',
+              title: 'POCKET.MP3',
               trailing: Transform.translate(
                 offset: const Offset(3, 0),
                 child: SoftSocketKey(
@@ -89,7 +89,7 @@ class EmptyLibraryScreen extends StatelessWidget {
                 text: 'On a Mac? Drop files into\n',
                 children: [
                   TextSpan(
-                    text: 'Files › On My iPhone › MP3 in ma pocket',
+                    text: 'Files › On My iPhone › pocket.mp3',
                     style: SoftText.footnote(c).copyWith(
                       fontWeight: FontWeight.w600,
                       color: c.text,

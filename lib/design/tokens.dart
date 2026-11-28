@@ -1,4 +1,4 @@
-// Design tokens for "MP3 in ma pocket" — Soft Keys direction.
+// Design tokens for "pocket.mp3" — Soft Keys direction.
 // Source of truth: design/tokens.json and the "Key screens — Soft Keys" canvas.
 import 'dart:ui' show lerpDouble;
 

@@ -38,7 +38,7 @@ void main() {
     );
 
     await withRealIo(tester, () => tester.pumpWidget(DesignPreviewApp(library: library, engine: FakeAudioEngine())));
-    expect(find.text('MP3 IN MA POCKET'), findsOneWidget);
+    expect(find.text('POCKET.MP3'), findsOneWidget);
 
     await withRealIo(tester, () => tester.tap(find.text('Import MP3s')));
 
@@ -341,9 +341,6 @@ void main() {
         onLicenses: () => opened.add('licenses'),
       ),
     ));
-    // The LCD's known 4px overflow (the test below) is not what this checks.
-    expect(tester.takeException(), anyOf(isNull, isFlutterError));
-
     for (final label in ['Privacy Policy, Opens in browser', 'Open Source Licenses', 'Back to Library']) {
       final node = tester.getSemantics(find.bySemanticsLabel(label));
       expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue, reason: label);

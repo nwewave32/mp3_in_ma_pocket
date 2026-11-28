@@ -1,4 +1,4 @@
-# MP3 in ma pocket — Design (Soft Keys)
+# pocket.mp3 — Design (Soft Keys)
 
 선택한 방향: **Key screens — Soft Keys** (02S · 03S · 04S/05S · 08S, 라이트/다크).
 

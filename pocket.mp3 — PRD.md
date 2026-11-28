@@ -1,4 +1,4 @@
-# MP3 in ma pocket — PRD
+# pocket.mp3 — PRD
 
 Oct 10, 2026 · @Kepler
 
@@ -100,9 +100,9 @@ Flutter로 만들고, 아래 패키지를 씁니다. 현재 프로토타입(`lib
 
 ## 미결 사항
 
-- [ ] 앱스토어에 올릴 앱 이름 ('MP3 in ma pocket' 그대로 쓸지)
+- [x] 앱스토어에 올릴 앱 이름: **pocket.mp3** (2026-11-28, 이전 가칭 'MP3 in ma pocket'). 번들 ID `com.ireuisu.pocketmp3`
 - [ ] 최소 iOS 버전 (제안: iOS 15)
 - [ ] 목록에 보여줄 제목: 파일명 vs mp3 태그(ID3)의 곡 제목·아티스트
 - [ ] 출시 국가
-- [ ] 개인정보 처리방침을 올릴 곳
+- [x] 개인정보 처리방침을 올릴 곳: https://ireuisu-legal.vercel.app/pocket-mp3/privacy/ (2026-11-28 결정, 페이지는 아직 없음)
 - [ ] 앱 아이콘과 기본 색상

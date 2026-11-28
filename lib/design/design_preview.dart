@@ -103,7 +103,7 @@ class _DesignPreviewAppState extends State<DesignPreviewApp> with WidgetsBinding
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'MP3 in ma pocket',
+      title: 'pocket.mp3',
       debugShowCheckedModeBanner: false,
       scaffoldMessengerKey: _messenger,
       theme: buildSoftTheme(Brightness.light),
@@ -173,7 +173,7 @@ class _Home extends StatelessWidget {
         onPrivacyPolicy: () => _openPrivacyPolicy(context),
         onLicenses: () => showLicensePage(
           context: context,
-          applicationName: 'MP3 in ma pocket',
+          applicationName: 'pocket.mp3',
           applicationVersion: '1.0.0 (1)',
         ),
       ),

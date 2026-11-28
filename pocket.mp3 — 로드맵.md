@@ -1,6 +1,6 @@
-# MP3 in ma pocket — 로드맵
+# pocket.mp3 — 로드맵
 
-2026-11-27 기준 · 출처: `MP3 in ma pocket — PRD.md`, `MP3 in ma pocket — 프로젝트 노트.md`의 할 일, `docs/worklog/`
+2026-11-27 기준 · 출처: `pocket.mp3 — PRD.md`, `pocket.mp3 — 프로젝트 노트.md`의 할 일, `docs/worklog/`
 
 PRD의 세 가지 목표를 순서대로 이루는 계획입니다. 목표는 탭 3번 안에 첫 재생, 끊김 없는 백그라운드 재생과 잠금화면 조작, 첫 제출에서 심사 통과입니다. 각 단계는 끝나는 조건을 모두 채워야 다음 단계로 넘어갑니다.
 
@@ -53,7 +53,7 @@ PRD의 세 가지 목표를 순서대로 이루는 계획입니다. 목표는 �
 
 **남은 작업**
 - [ ] About 화면 연결: 앱 버전(`package_info_plus`), 개인정보 처리방침 열기(`url_launcher`)
-- [ ] About 화면 넘침 테스트 2개 실패 해결 (`test/design_screens_test.dart`, 라이트·다크)
+- [x] About 화면 넘침 테스트 2개 실패 해결 (긴 앱 이름이 원인, 이름 변경으로 해결)
 - [ ] README 작성 (지금은 Flutter 기본 템플릿)
 
 ## 3단계 · 출시 준비와 제출 (v1.0) ⏳
@@ -61,16 +61,16 @@ PRD의 세 가지 목표를 순서대로 이루는 계획입니다. 목표는 �
 **끝나는 조건:** 첫 제출에서 앱스토어 심사를 통과합니다.
 
 **먼저 정할 것 (PRD 미결 사항)**
-- [ ] 앱스토어 앱 이름 ('MP3 in ma pocket'을 그대로 쓸지)
+- [x] 앱스토어 앱 이름: pocket.mp3, 번들 ID `com.ireuisu.pocketmp3` (2026-11-28)
 - [ ] 최소 iOS 버전: 지금은 14.0 (`file_picker` 13이 요구함), PRD 제안은 15
 - [ ] 목록 제목: 파일명 vs ID3 태그의 곡 제목·아티스트
 - [ ] 출시 국가
-- [ ] 개인정보 처리방침을 올릴 곳
+- [x] 개인정보 처리방침을 올릴 곳: `ireuisu-legal.vercel.app/pocket-mp3/privacy/` (페이지 만들기는 아래 준비물)
 - [x] 앱 아이콘: Mixtape Pocket (`cc99c7a`)
 
 **준비물**
 - [ ] Apple Developer Program 가입 (연 $99)
-- [ ] 개인정보 처리방침 URL을 About 화면과 App Store Connect에 연결
+- [ ] 개인정보 처리방침 페이지 올리기(`/pocket-mp3/privacy/`, 지금 404). About 화면 연결은 끝남, App Store Connect에 입력
 - [ ] 개인정보 라벨: '데이터 수집 안 함'
 - [ ] 스크린샷 (Library, Now Playing, 잠금화면)
 - [ ] 심사 메모: 백그라운드 오디오를 쓰는 이유, 잠금화면 연동과 셔플·반복 설명 ('최소 기능' 거절 대비)

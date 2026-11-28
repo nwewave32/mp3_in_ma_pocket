@@ -64,7 +64,7 @@ class AboutScreen extends StatelessWidget {
                             Text('v$version', style: SoftText.lcdMicro(c)),
                           ],
                         ),
-                        Text('MP3 IN MA POCKET', style: SoftText.lcdHeadline(c)),
+                        Text('POCKET.MP3', style: SoftText.lcdHeadline(c)),
                         Text('OFFLINE · NO DATA COLLECTED', style: SoftText.lcdMicro(c)),
                       ],
                     ),

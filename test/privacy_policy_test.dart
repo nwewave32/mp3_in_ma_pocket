@@ -16,6 +16,10 @@ void main() {
     expect(privacyPolicyUrl(null), isNull);
   });
 
+  test("pocket.mp3's page", () {
+    expect(privacyPolicyUrl().toString(), 'https://ireuisu-legal.vercel.app/pocket-mp3/privacy/');
+  });
+
   Future<void> openAbout(WidgetTester tester, {Uri? url, required Future<bool> Function(Uri) openUrl}) async {
     phone(tester);
     final empty = (await tempRoot(tester, 'privacy_test'));
@@ -30,13 +34,6 @@ void main() {
     );
     await tester.tap(find.bySemanticsLabel('About'));
     await tester.pumpAndSettle();
-    // The LCD's known overflow on About (design_screens_test) is not what
-    // this checks; any other error still fails the test.
-    final error = tester.takeException();
-    if (error != null) {
-      expect(error, isA<FlutterError>());
-      expect(error.toString(), contains('A RenderFlex overflowed'));
-    }
   }
 
   final url = Uri.parse('https://ireuisu-legal.vercel.app/example/privacy/');

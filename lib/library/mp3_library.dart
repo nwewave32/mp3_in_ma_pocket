@@ -19,7 +19,7 @@ class ImportResult {
 }
 
 /// The MP3s stored in the app's Documents folder, which the Files app shows
-/// as "On My iPhone › MP3 in ma pocket" (F2).
+/// as "On My iPhone › pocket.mp3" (F2).
 class Mp3Library {
   Mp3Library({Future<Directory> Function()? directory, Mp3Picker? picker})
       : _directory = directory ?? getApplicationDocumentsDirectory,
