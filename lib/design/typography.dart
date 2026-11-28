@@ -11,6 +11,11 @@ abstract final class SoftFonts {
   static const String? ui = null;
   static const String mono = 'JetBrainsMono';
 
+  /// Track titles in the Library list. Space Grotesk has no Hangul, so
+  /// Pretendard fills in Korean file names.
+  static const String trackTitle = 'SpaceGrotesk';
+  static const List<String> trackTitleFallback = ['Pretendard'];
+
   /// LCD-only pixel font. DotGothic16 has no Hangul, so Galmuri11 (also a
   /// pixel font) fills in Korean file names.
   static const String lcd = 'DotGothic16';
@@ -32,6 +37,12 @@ abstract final class SoftText {
       TextStyle(fontSize: 15, height: 1.4, fontWeight: FontWeight.w600, color: c.text);
   static TextStyle footnote(SoftColors c) =>
       TextStyle(fontSize: 13, height: 1.45, color: c.textSecondary);
+
+  /// A Library row's title; the playing row uses [trackTitleStrong].
+  static TextStyle trackTitle(SoftColors c) => body(c).copyWith(
+      fontFamily: SoftFonts.trackTitle, fontFamilyFallback: SoftFonts.trackTitleFallback);
+  static TextStyle trackTitleStrong(SoftColors c) =>
+      trackTitle(c).copyWith(fontWeight: FontWeight.w600);
 
   // ---- Mono (numbers, labels) ----
   /// Screen title: centered, uppercase, tracked out. e.g. "LIBRARY · 12".

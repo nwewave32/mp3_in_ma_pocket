@@ -86,6 +86,20 @@ flutter:
           weight: 500
         - asset: assets/fonts/JetBrainsMono-SemiBold.ttf
           weight: 600
+    # Track titles in the Library list (Latin; Hangul from Pretendard below).
+    - family: SpaceGrotesk
+      fonts:
+        - asset: assets/fonts/SpaceGrotesk-Regular.ttf
+        - asset: assets/fonts/SpaceGrotesk-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/SpaceGrotesk-SemiBold.ttf
+          weight: 600
+    # Hangul fallback for track titles (Space Grotesk has no Hangul).
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/Pretendard-Regular.otf
+        - asset: assets/fonts/Pretendard-SemiBold.otf
+          weight: 600
 
   # To add assets to your application, add an assets section, like this:
   # assets:

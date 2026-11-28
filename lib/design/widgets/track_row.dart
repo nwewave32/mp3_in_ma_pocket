@@ -4,7 +4,7 @@ import '../tokens.dart';
 import '../typography.dart';
 import 'soft_surface.dart';
 
-/// One library row: file name (".mp3" hidden) + mono duration.
+/// One library row: file name (".mp3" hidden) in Space Grotesk + mono duration.
 /// The playing row sinks into the panel and gets an orange LED.
 class TrackRow extends StatelessWidget {
   const TrackRow({
@@ -43,8 +43,8 @@ class TrackRow extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: playing
-                  ? SoftText.bodyStrong(c).copyWith(color: c.accentText)
-                  : SoftText.body(c),
+                  ? SoftText.trackTitleStrong(c).copyWith(color: c.accentText)
+                  : SoftText.trackTitle(c),
             ),
           ),
           const SizedBox(width: 12),
